@@ -96,7 +96,6 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                 </div>
-                
                 <button
                   onClick={handleSignOut}
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"

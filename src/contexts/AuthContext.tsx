@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -27,10 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  let inactivityTimer: NodeJS.Timeout;
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       setSupabaseUser(session?.user ?? null);
       if (session?.user) {
         fetchUserProfile(session.user.id);
@@ -41,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event: any, session: any) => {
         setSupabaseUser(session?.user ?? null);
         if (session?.user) {
           await fetchUserProfile(session.user.id);
@@ -109,10 +111,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+    
+    if (user) {
+      inactivityTimer = setTimeout(async () => {
+        await signOut();
+      }, 10 * 60 * 1000); // 10 minutes
+    }
+  }, [user]);
+
+  // Handle signOut
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSupabaseUser(null);
+      // Clear the timer when signing out
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
   };
+
+   // Set up activity listeners
+  useEffect(() => {
+    if (user) {
+      // Events to track user activity
+      const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+      
+      const handleUserActivity = () => {
+        resetInactivityTimer();
+      };
+
+      events.forEach(event => {
+        document.addEventListener(event, handleUserActivity);
+      });
+
+      // Initial timer setup
+      resetInactivityTimer();
+
+      // Cleanup
+      return () => {
+        events.forEach(event => {
+          document.removeEventListener(event, handleUserActivity);
+        });
+        if (inactivityTimer) {
+          clearTimeout(inactivityTimer);
+        }
+      };
+    }
+  }, [user, resetInactivityTimer]);
 
   const isAdmin = user?.role === 'admin';
 
