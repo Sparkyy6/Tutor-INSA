@@ -35,6 +35,16 @@ export default function AuthForm() {
     'Sécurité et Technologies',
   ];
 
+    useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    if (mode === 'signup') {
+      setIsLogin(false);
+    } else if (mode === 'login') {
+      setIsLogin(true);
+    }
+  }, []);
+  
   useEffect(() => {
     fetchCampuses();
     fetchSubjects();
