@@ -1,112 +1,40 @@
 export interface User {
   id: string;
+  name: string;
   email: string;
-  full_name: string;
-  profile_picture_url?: string;
-  year_level: number;
-  department: string;
-  campus_id: string;
-  is_tutor: boolean;
   role: 'student' | 'tutor' | 'admin';
-  bio?: string;
-  created_at: string;
+  createdAt: Date;
+  password?: string; // Optional for security reasons
 }
 
-export interface Campus {
-  id: string;
-  name: string;
-  city: string;
-  address?: string;
-  created_at: string;
-}
-
-export interface Subject {
-  id: string;
-  name: string;
-  code: string;
+export interface student extends User {
+  enrolledCourses: string[];
   department: string;
-  year_level: number;
-  semester: number;
-  credits: number;
-  description?: string;
-  created_at: string;
+  year: number;
 }
 
-export interface TutorSubject {
+export interface Tutor extends User {
+  subject: string[];
+  department: string;
+  availableHours: string[];
+  students: string[]; // List of student IDs
+}
+
+export interface Admin extends User {
+  permissions: string[]; // List of admin permissions
+}
+
+
+export interface session {
   id: string;
-  tutor_id: string;
-  subject_id: string;
-  experience_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  created_at: string;
-  subject?: Subject;
+  subject: string;
+  scheduledAt: Date;
+  duration: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  createdAt: Date;
+  studentId: string;
+  tutorId: string;
 }
 
-export interface TutoringSession {
-  id: string;
-  tutor_id: string;
-  student_id: string;
-  subject_id: string;
-  title: string;
-  description?: string;
-  scheduled_at: string;
-  duration_minutes: number;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  session_type: 'online' | 'in_person';
-  meeting_link?: string;
-  location?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  tutor?: User;
-  student?: User;
-  subject?: Subject;
-}
 
-export interface SessionRequest {
-  id: string;
-  student_id: string;
-  tutor_id: string;
-  subject_id: string;
-  message?: string;
-  preferred_date?: string;
-  duration_minutes: number;
-  session_type: 'online' | 'in_person';
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
-  created_at: string;
-  student?: User;
-  tutor?: User;
-  subject?: Subject;
-}
 
-export interface Review {
-  id: string;
-  session_id: string;
-  reviewer_id: string;
-  reviewed_id: string;
-  rating: number;
-  comment?: string;
-  created_at: string;
-  reviewer?: User;
-  session?: TutoringSession;
-}
-
-export interface Message {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  session_id?: string;
-  message_type: 'text' | 'file' | 'image';
-  file_url?: string;
-  read_at?: string;
-  created_at: string;
-  sender?: User;
-  receiver?: User;
-}
-
-export interface TutorProfile extends User {
-  subjects: TutorSubject[];
-  rating: number;
-  total_sessions: number;
-  reviews: Review[];
-}
