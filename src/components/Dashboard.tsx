@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, BookOpen, TrendingUp, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Users, BookOpen, TrendingUp, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+// import { supabase } from '../lib/supabase';
 
 interface DashboardStats {
   upcomingSessions: number;
@@ -10,6 +10,14 @@ interface DashboardStats {
   subjectsOffered: number;
 }
 
+interface SessionType {
+  id: number;
+  subject: string;
+  time: string;
+  date: string;
+  tutor: string;
+  type: string;
+}
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -18,7 +26,7 @@ export default function Dashboard() {
     averageRating: 0,
     subjectsOffered: 0,
   });
-  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<SessionType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

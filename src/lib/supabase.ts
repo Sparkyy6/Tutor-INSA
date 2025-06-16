@@ -1,32 +1,46 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './database.types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-let supabase;
+// Déclarer avec un type explicite
+let supabase: SupabaseClient<Database>;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables not configured. Using mock mode.');
-  // Create a mock client for development
+  // Créer un client mock typé
   supabase = {
     auth: {
-      getSession: () => Promise.resolve({ data: { session: null } }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signUp: () => Promise.resolve({ data: { user: null }, error: new Error('Supabase not configured') }),
-      signInWithPassword: () => Promise.resolve({ error: new Error('Supabase not configured') }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       signOut: () => Promise.resolve({ error: null }),
+      // Ajouter d'autres méthodes mock selon vos besoins
     },
-    from: () => ({
+    from: (table: string) => ({
       select: () => ({
         eq: () => ({
-          single: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') })
+          data: [],
+          error: null
         })
       }),
-      insert: () => Promise.resolve({ error: new Error('Supabase not configured') })
+      insert: () => ({
+        data: null,
+        error: null
+      }),
+      update: () => ({
+        data: null,
+        error: null
+      }),
+      delete: () => ({
+        data: null,
+        error: null
+      })
     })
-  };
+    // Ajouter d'autres méthodes nécessaires
+  } as unknown as SupabaseClient<Database>;
 } else {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  // Initialisation du vrai client
+  supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 }
 
 export { supabase };

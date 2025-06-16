@@ -427,7 +427,9 @@ export default function AdminPanel() {
                       {session.student?.full_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(session.scheduled_at).toLocaleDateString('fr-FR')}
+                      {session.scheduled_at ? 
+                        new Date(session.scheduled_at).toLocaleDateString('fr-FR') : 
+                        new Date(session.start_time).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

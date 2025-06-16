@@ -1,64 +1,60 @@
 export interface User {
   id: string;
+  created_at: string;
   email: string;
   full_name: string;
-  profile_picture_url?: string;
-  year_level: number;
-  department: string;
-  campus_id: string;
+  profile_picture_url: string | null;
+  department: string | null;
+  year_level?: number; // Ajout de cette propriété
+  bio?: string; // Ajout de cette propriété
   is_tutor: boolean;
   role: 'student' | 'tutor' | 'admin';
-  bio?: string;
-  created_at: string;
-}
-
-export interface Campus {
-  id: string;
-  name: string;
-  city: string;
-  address?: string;
-  created_at: string;
+  campus_id: number | null;
+  campus?: Campus;
 }
 
 export interface Subject {
-  id: string;
+  id: number;
   name: string;
   code: string;
+  description: string | null;
   department: string;
-  year_level: number;
-  semester: number;
+  year_level: string;
   credits: number;
-  description?: string;
-  created_at: string;
+  level: 'L1' | 'L2' | 'L3' | 'M1' | 'M2' | null;
 }
 
+export interface Campus {
+  id: number;
+  name: string;
+  city: string;
+  address: string | null;
+}
+
+export interface TutoringSession {
+  id: number;
+  title: string; // Propriété utilisée dans AdminPanel
+  tutor_id: string;
+  student_id: string;
+  subject_id: number;
+  scheduled_at?: string; // Propriété optionnelle utilisée dans AdminPanel
+  start_time: string;
+  end_time: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes: string | null;
+  created_at: string;
+  tutor?: User;
+  student?: User;
+  subject?: Subject;
+}
+
+// Vous pouvez conserver ces types supplémentaires qui ne sont pas dans database.types.ts
 export interface TutorSubject {
   id: string;
   tutor_id: string;
   subject_id: string;
   experience_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   created_at: string;
-  subject?: Subject;
-}
-
-export interface TutoringSession {
-  id: string;
-  tutor_id: string;
-  student_id: string;
-  subject_id: string;
-  title: string;
-  description?: string;
-  scheduled_at: string;
-  duration_minutes: number;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  session_type: 'online' | 'in_person';
-  meeting_link?: string;
-  location?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  tutor?: User;
-  student?: User;
   subject?: Subject;
 }
 

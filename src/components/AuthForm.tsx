@@ -12,7 +12,7 @@ export default function AuthForm() {
   const [error, setError] = useState('');
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string>('');
   
@@ -122,7 +122,7 @@ export default function AuthForm() {
     }
   };
 
-  const handleSubjectToggle = (subjectId: string) => {
+  const handleSubjectToggle = (subjectId: number) => {
     setSelectedSubjects(prev => 
       prev.includes(subjectId)
         ? prev.filter(id => id !== subjectId)
@@ -198,10 +198,10 @@ export default function AuthForm() {
           if (profileError) throw profileError;
 
           // If user is a tutor, add their subjects
-          if (formData.is_tutor && selectedSubjects.length > 0) {
+          if (formData.is_tutor && selectedSubjects.length > 0 && data.user) {
             const tutorSubjects = selectedSubjects.map(subjectId => ({
-              tutor_id: data.user.id,
-              subject_id: subjectId,
+              tutor_id: data.user?.id,
+              subject_id: subjectId.toString(),
               experience_level: 'intermediate' as const,
             }));
 

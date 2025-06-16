@@ -1,16 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import LandingPage from './components/LandingPage';
+import AuthForm from './components/AuthForm';
 import Dashboard from './components/Dashboard';
 import TutorsList from './components/TutorsList';
 import Calendar from './components/Calendar';
 import Messages from './components/Messages';
 import Profile from './components/Profile';
 import AdminPanel from './components/AdminPanel';
-import AuthForm from './components/AuthForm';
-import LandingPage from './components/LandingPage';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -19,8 +18,8 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement de la plateforme...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
     );
@@ -45,7 +44,6 @@ function AppContent() {
               <Route path="/messages" element={<Messages />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/admin/users" element={<AdminPanel />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Layout>

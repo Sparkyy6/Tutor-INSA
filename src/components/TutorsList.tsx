@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Star, Clock, MapPin, BookOpen, User, MessageCircle, GraduationCap } from 'lucide-react';
+import { Search, Filter, Star, Clock, MapPin, BookOpen, User, MessageCircle, GraduationCap, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { TutorProfile, Subject, Campus } from '../types';
@@ -123,7 +123,7 @@ export default function TutorsList() {
     }
 
     if (selectedCampus) {
-      filtered = filtered.filter(tutor => tutor.campus_id === selectedCampus);
+      filtered = filtered.filter(tutor => tutor.campus_id === parseInt(selectedCampus));
     }
 
     setFilteredTutors(filtered);
@@ -159,7 +159,10 @@ export default function TutorsList() {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 text-lg">{tutor.full_name}</h3>
-            <p className="text-sm text-gray-600">{tutor.department} - Année {tutor.year_level}</p>
+            <p className="text-sm text-gray-600">
+              {tutor.department} 
+              {tutor.year_level ? ` - Année ${tutor.year_level}` : ''}
+            </p>
             <p className="text-xs text-gray-500">{tutor.campus?.city}</p>
             <div className="flex items-center space-x-1 mt-1">
               <Star className="w-4 h-4 text-yellow-400 fill-current" />
