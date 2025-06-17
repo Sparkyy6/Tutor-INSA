@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import { registerUser } from './services/auth';
 import { supabase } from './lib/supabase';
+import Home from './components/Home';
 
 function App() {
     const [currentView, setCurrentView] = useState('home'); // 'home', 'login', 'register'
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -42,38 +45,82 @@ function App() {
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (currentView === 'login') {
-            console.log('Login attempt with:', { email: formData.email, password: formData.password });
-            // TODO: Implement actual login logic
-        } else if (currentView === 'register') {
-            if (formData.password !== formData.confirmPassword) {
-                alert("Les mots de passe ne correspondent pas!");
+        
+        try {
+            // Vérifier les identifiants dans la base de données
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', formData.email)
+                .eq('password', formData.password) // En production, utiliser un hash
+                .single();
+
+            if (error || !user) {
+                alert('Email ou mot de passe incorrect');
                 return;
             }
+
+            // Connexion réussie
+            setCurrentUser(user);
+            setIsLoggedIn(true);
             
-            try {
-                // Enregistrer uniquement l'utilisateur de base
-                await registerUser({
-                    user: {
-                        name: formData.name,
-                        email: formData.email,
-                        password: formData.password,
-                        year: formData.year ? Number(formData.year) : undefined,
-                        departement: formData.departement
-                    },
-                    isStudent: false,
-                    isTutor: false
-                });
-                
-                alert('Inscription réussie ! Vous pourrez choisir votre rôle après vous être connecté.');
-                setCurrentView('login');
-            } catch (error: any) {
-                alert(error.message || 'Erreur lors de l\'inscription');
-            }
+            // Réinitialiser le formulaire
+            setFormData({
+                email: '',
+                password: '',
+                confirmPassword: '',
+                name: '',
+                year: '',
+                departement: 'stpi',
+            });
+
+        } catch (error: any) {
+            alert('Erreur lors de la connexion');
+            console.error('Login error:', error);
         }
     };
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (formData.password !== formData.confirmPassword) {
+            alert("Les mots de passe ne correspondent pas!");
+            return;
+        }
+        
+        try {
+            // Enregistrer uniquement l'utilisateur de base
+            await registerUser({
+                user: {
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    year: formData.year ? Number(formData.year) : undefined,
+                    departement: formData.departement
+                },
+                isStudent: false,
+                isTutor: false
+            });
+            
+            alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+            setCurrentView('login');
+        } catch (error: any) {
+            alert(error.message || 'Erreur lors de l\'inscription');
+        }
+    };
+
+    const handleLogout = () => {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        setCurrentView('home');
+    };
+
+    // Si l'utilisateur est connecté, afficher la page d'accueil
+    if (isLoggedIn && currentUser) {
+        return <Home user={currentUser} onLogout={handleLogout} />;
+    }
 
     const renderView = () => {
         switch(currentView) {
@@ -81,7 +128,7 @@ function App() {
                 return (
                     <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200">
                         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Connexion</h2>
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleLogin}>
                             <div className="mb-4">
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                 <input
@@ -141,7 +188,7 @@ function App() {
                 return (
                     <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200">
                         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Inscription</h2>
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleRegister}>
                             {/* Informations personnelles de base */}
                             <div className="mb-4">
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
