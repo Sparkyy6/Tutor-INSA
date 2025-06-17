@@ -1,10 +1,12 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
 import LandingPage from '../components/LandingPage';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import Home from '../components/Home';
+import TutorRegistration from '../components/TutorRegistration';
 
 const AppRoutes: React.FC = () => {
   const { user, isLoading, signOut } = useAuth();
@@ -20,9 +22,17 @@ const AppRoutes: React.FC = () => {
     );
   }
   
-  // Si utilisateur connecté
+  // Si utilisateur connecté, utiliser Router
   if (user) {
-    return <Home user={{ ...user, departement: user.departement ?? '' }} onLogout={signOut} />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home user={{ ...user, departement: user.departement ?? '' }} onLogout={signOut} />} />
+          <Route path="/become-tutor" element={<TutorRegistration />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+    );
   }
   
   // Différentes vues pour utilisateur non connecté

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface HomeProps {
   user: {
@@ -11,6 +12,8 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -69,7 +72,10 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer">
+            <div 
+              onClick={() => navigate('/become-tutor')}
+              className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer"
+            >
               <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
                 <span className="text-green-600 text-xl">👨‍🏫</span>
               </div>
