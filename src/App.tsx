@@ -23,6 +23,14 @@ function App() {
         if (formData.year === '1' && formData.departement !== 'stpi') {
             setFormData(prev => ({ ...prev, departement: 'stpi' }));
         }
+        // Si l'année est >= 2, et le département est STPI, changer pour GSI par défaut
+        else if (
+            formData.year !== '' && 
+            parseInt(formData.year) >= 2 && 
+            formData.departement === 'stpi'
+        ) {
+            setFormData(prev => ({ ...prev, departement: 'gsi' }));
+        }
     }, [formData.year]);
 
     useEffect(() => {
@@ -271,20 +279,28 @@ function App() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                     required
-                                    disabled={formData.year === '1'} // Désactivé si 1ère année
+                                    disabled={formData.year === '1' || formData.year === ''} // Désactivé si 1ère année ou pas d'année sélectionnée
                                 >
-                                    <option value="stpi">STPI - Sciences et Techniques Pour l'Ingénieur</option>
-                                    {formData.year !== '1' && (
-                                        <>
-                                            <option value="gsi">GSI - Génie des Systèmes Industriels</option>
-                                            <option value="sti">STI - Sécurité et Technologies Informatiques</option>
-                                            <option value="mri">MRI - Maîtrise des Risques Industriels</option>
-                                        </>
+                                    {formData.year === '1' && (
+                                      <option value="stpi">STPI - Sciences et Techniques Pour l'Ingénieur</option>
+                                    )}
+                                    
+                                    {formData.year !== '' && parseInt(formData.year) >= 2 && (
+                                      <>
+                                        <option value="gsi">GSI - Génie des Systèmes Industriels</option>
+                                        <option value="sti">STI - Sécurité et Technologies Informatiques</option>
+                                        <option value="mri">MRI - Maîtrise des Risques Industriels</option>
+                                      </>
                                     )}
                                 </select>
                                 {formData.year === '1' && (
                                     <p className="text-xs text-gray-500 mt-1">
                                         Les étudiants de 1ère année sont automatiquement affectés au département STPI.
+                                    </p>
+                                )}
+                                {formData.year !== '' && parseInt(formData.year) >= 2 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Les étudiants de 2ème année et plus ne peuvent pas être en STPI.
                                     </p>
                                 )}
                             </div>
