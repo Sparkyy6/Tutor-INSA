@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// npm install react react-dom @types/react @types/react-dom
 import './index.css';
 import { registerUser } from './services/auth';
 import { supabase } from './lib/supabase';
@@ -11,12 +10,17 @@ function App() {
         password: '',
         confirmPassword: '',
         name: '',
-        role: 'student',
-        department: '',
         year: '',
-        subject: '',
-        availablehours: '',
+        departement: 'stpi', // Valeur par défaut
     });
+
+    // Gestion dynamique du département en fonction de l'année
+    useEffect(() => {
+        // Si l'année est 1, forcer le département à STPI
+        if (formData.year === '1' && formData.departement !== 'stpi') {
+            setFormData(prev => ({ ...prev, departement: 'stpi' }));
+        }
+    }, [formData.year]);
 
     useEffect(() => {
         async function testConnection() {
@@ -30,7 +34,7 @@ function App() {
         testConnection();
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData({
             ...formData,
@@ -48,18 +52,22 @@ function App() {
                 alert("Les mots de passe ne correspondent pas!");
                 return;
             }
+            
             try {
+                // Enregistrer uniquement l'utilisateur de base
                 await registerUser({
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
-                    role: formData.role as 'student' | 'tutor',
-                    department: formData.department,
-                    year: formData.role === 'student' ? Number(formData.year) : undefined,
-                    subject: formData.role === 'tutor' ? formData.subject.split(',').map(s => s.trim()) : undefined,
-                    availablehours: formData.role === 'tutor' ? formData.availablehours.split(',').map(s => s.trim()) : undefined,
+                    user: {
+                        name: formData.name,
+                        email: formData.email,
+                        password: formData.password,
+                        year: formData.year ? Number(formData.year) : undefined,
+                        departement: formData.departement
+                    },
+                    isStudent: false,
+                    isTutor: false
                 });
-                alert('Inscription réussie !');
+                
+                alert('Inscription réussie ! Vous pourrez choisir votre rôle après vous être connecté.');
                 setCurrentView('login');
             } catch (error: any) {
                 alert(error.message || 'Erreur lors de l\'inscription');
@@ -109,9 +117,19 @@ function App() {
                         </form>
                         
                         <div className="text-center mt-6 text-sm text-gray-600">
+                            <span>Vous n'avez pas de compte ?</span>
+                            <button
+                                onClick={() => setCurrentView('register')}
+                                className="text-red-600 hover:text-red-700 font-medium underline ml-2 focus:outline-none"
+                            >
+                                S'inscrire
+                            </button>
+                        </div>
+                        
+                        <div className="text-center mt-4 text-sm text-gray-600">
                             <button
                                 onClick={() => setCurrentView('home')}
-                                className="text-red-600 hover:text-red-700 font-medium underline ml-2 focus:outline-none"
+                                className="text-red-600 hover:text-red-700 font-medium underline focus:outline-none"
                             >
                                 Retour à l'accueil
                             </button>
@@ -124,20 +142,7 @@ function App() {
                     <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200">
                         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Inscription</h2>
                         <form onSubmit={handleSubmit}>
-                            {/* Choix du rôle */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Je suis :</label>
-                                <select
-                                    name="role"
-                                    value={formData.role || 'student'}
-                                    onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                >
-                                    <option value="student">Étudiant</option>
-                                    <option value="tutor">Tuteur</option>
-                                </select>
-                            </div>
-
+                            {/* Informations personnelles de base */}
                             <div className="mb-4">
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
                                 <input
@@ -150,6 +155,7 @@ function App() {
                                     required
                                 />
                             </div>
+                            
                             <div className="mb-4">
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                 <input
@@ -162,6 +168,7 @@ function App() {
                                     required
                                 />
                             </div>
+                            
                             <div className="mb-4">
                                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
                                 <input
@@ -174,6 +181,7 @@ function App() {
                                     required
                                 />
                             </div>
+                            
                             <div className="mb-4">
                                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
                                 <input
@@ -187,72 +195,52 @@ function App() {
                                 />
                             </div>
 
-                            {/* Champs spécifiques selon le rôle */}
-                            {formData.role === 'student' && (
-                                <>
-                                    <div className="mb-4">
-                                        <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">Département</label>
-                                        <input
-                                            type="text"
-                                            id="department"
-                                            name="department"
-                                            value={formData.department || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div className="mb-4">
-                                        <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">Année</label>
-                                        <input
-                                            type="number"
-                                            id="year"
-                                            name="year"
-                                            value={formData.year || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </>
-                            )}
-                            {formData.role === 'tutor' && (
-                                <>
-                                    <div className="mb-4">
-                                        <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">Département</label>
-                                        <input
-                                            type="text"
-                                            id="department"
-                                            name="department"
-                                            value={formData.department || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div className="mb-4">
-                                        <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Matières (séparées par une virgule)</label>
-                                        <input
-                                            type="text"
-                                            id="subject"
-                                            name="subject"
-                                            value={formData.subject || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                            placeholder="Maths, Physique, ..."
-                                        />
-                                    </div>
-                                    <div className="mb-4">
-                                        <label htmlFor="availablehours" className="block text-sm font-medium text-gray-700 mb-1">Disponibilités (séparées par une virgule)</label>
-                                        <input
-                                            type="text"
-                                            id="availablehours"
-                                            name="availablehours"
-                                            value={formData.availablehours || ''}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                            placeholder="Lundi 18h, Mercredi 14h, ..."
-                                        />
-                                    </div>
-                                </>
-                            )}
+                            {/* Informations sur le cursus */}
+                            <div className="mb-4">
+                                <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">Année d'étude</label>
+                                <select
+                                    id="year"
+                                    name="year"
+                                    value={formData.year}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value="">Sélectionner une année</option>
+                                    <option value="1">1ère année</option>
+                                    <option value="2">2ème année</option>
+                                    <option value="3">3ème année</option>
+                                    <option value="4">4ème année</option>
+                                    <option value="5">5ème année</option>
+                                </select>
+                            </div>
+                            
+                            <div className="mb-4">
+                                <label htmlFor="departement" className="block text-sm font-medium text-gray-700 mb-1">Département</label>
+                                <select
+                                    id="departement"
+                                    name="departement"
+                                    value={formData.departement}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    required
+                                    disabled={formData.year === '1'} // Désactivé si 1ère année
+                                >
+                                    <option value="stpi">STPI - Sciences et Techniques Pour l'Ingénieur</option>
+                                    {formData.year !== '1' && (
+                                        <>
+                                            <option value="gsi">GSI - Génie des Systèmes Industriels</option>
+                                            <option value="sti">STI - Sécurité et Technologies Informatiques</option>
+                                            <option value="mri">MRI - Maîtrise des Risques Industriels</option>
+                                        </>
+                                    )}
+                                </select>
+                                {formData.year === '1' && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Les étudiants de 1ère année sont automatiquement affectés au département STPI.
+                                    </p>
+                                )}
+                            </div>
 
                             <button
                                 type="submit"
@@ -263,9 +251,19 @@ function App() {
                         </form>
                         
                         <div className="text-center mt-6 text-sm text-gray-600">
+                            <span>Déjà inscrit ?</span>
+                            <button
+                                onClick={() => setCurrentView('login')}
+                                className="text-red-600 hover:text-red-700 font-medium underline ml-2 focus:outline-none"
+                            >
+                                Se connecter
+                            </button>
+                        </div>
+                        
+                        <div className="text-center mt-4 text-sm text-gray-600">
                             <button
                                 onClick={() => setCurrentView('home')}
-                                className="text-red-600 hover:text-red-700 font-medium underline ml-2 focus:outline-none"
+                                className="text-red-600 hover:text-red-700 font-medium underline focus:outline-none"
                             >
                                 Retour à l'accueil
                             </button>
@@ -297,7 +295,7 @@ function App() {
                             </button>
                         </div>
                         
-                        {/* Image décorative ou logo */}
+                        {/* Section avantages */}
                         <div className="mt-16 bg-gray-100 p-8 rounded-lg shadow-inner">
                             <h3 className="text-2xl font-semibold mb-4 text-gray-700">Pourquoi utiliser notre plateforme ?</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">

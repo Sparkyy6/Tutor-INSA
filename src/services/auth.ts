@@ -1,36 +1,48 @@
 import { supabase } from '../lib/supabase';
 
-export async function registerUser(formData: {
-  name: string;
-  email: string;
-  password: string;
-  role: 'student' | 'tutor';
-  department?: string;
-  year?: number;
-  subject?: string[];
-  availablehours?: string[];
-}) {
-  if (formData.role === 'student') {
-    const { error } = await supabase.from('student').insert({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: 'student',
-      department: formData.department ?? null,
-      year: formData.year ?? null,
-      enrolledcourses: [],
-    });
-    if (error) throw error;
-  } else if (formData.role === 'tutor') {
-    const { error } = await supabase.from('tutor').insert({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: 'tutor',
-      department: formData.department ?? null,
-      subject: formData.subject ?? [],
-      availablehours: formData.availablehours ?? [],
-    });
-    if (error) throw error;
+// Type pour les nouveaux paramètres
+type RegisterUserParams = {
+  user: {
+    name: string;
+    email: string;
+    password: string;
+    year?: number;
+    departement?: string;
+  };
+  isStudent: boolean;
+  isTutor: boolean;
+  studentData?: {
+    matieres: string[];
+  };
+  tutorData?: {
+    matieres: string[];
+    availablehours: string[];
+  };
+};
+
+export async function registerUser(params: RegisterUserParams) {
+  const { user } = params;
+
+  try {
+    // Créer l'utilisateur de base dans la table users
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        name: user.name,
+        email: user.email,
+        password: user.password, // Idéalement, utiliser un hash
+        year: user.year,
+        departement: user.departement
+      })
+      .select()
+      .single();
+
+    if (userError) throw userError;
+
+    // Les rôles (étudiant/tuteur) seront attribués après la connexion
+    return userData;
+  } catch (error) {
+    console.error('Error registering user:', error);
+    throw error;
   }
 }

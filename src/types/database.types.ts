@@ -15,94 +15,72 @@ export type Database = {
           name: string | null
           email: string
           password: string
-          created_at: string
-          role: 'student' | 'tutor' | 'admin'
+          year: number | null
         }
         Insert: {
           id?: string
           name?: string | null
           email: string
           password: string
-          created_at?: string
-          role?: 'student' | 'tutor' | 'admin'
+          year?: number | null
         }
         Update: {
           id?: string
           name?: string | null
           email?: string
           password?: string
-          created_at?: string
-          role?: 'student' | 'tutor' | 'admin'
+          year?: number | null
+        }
+      }
+      matiere: {
+        Row: {
+          nom: string
+          departement: string
+          annee: number
+        }
+        Insert: {
+          nom: string
+          departement: string
+          annee: number
+        }
+        Update: {
+          nom?: string
+          departement?: string
+          annee?: number
         }
       }
       student: {
         Row: {
           id: string
-          name: string | null
-          email: string
-          password: string
-          created_at: string
-          role: 'student'
-          enrolledcourses: string[] | null
-          year: number | null
-          department: string | null
+          user_id: string
+          matieres: string[] | null
         }
         Insert: {
           id?: string
-          name?: string | null
-          email: string
-          password: string
-          created_at?: string
-          role?: 'student'
-          enrolledcourses?: string[] | null
-          year?: number | null
-          department?: string | null
+          user_id: string
+          matieres?: string[] | null
         }
         Update: {
           id?: string
-          name?: string | null
-          email?: string
-          password?: string
-          created_at?: string
-          role?: 'student'
-          enrolledcourses?: string[] | null
-          year?: number | null
-          department?: string | null
+          user_id?: string
+          matieres?: string[] | null
         }
       }
       tutor: {
         Row: {
           id: string
-          name: string | null
-          email: string
-          password: string
-          created_at: string
-          role: 'tutor'
-          subject: string[] | null
-          department: string | null
-          availablehours: string[] | null
+          user_id: string
+          matieres: string[] | null
         }
         Insert: {
           id?: string
-          name?: string | null
-          email: string
-          password: string
-          created_at?: string
-          role?: 'tutor'
-          subject?: string[] | null
-          department?: string | null
-          availablehours?: string[] | null
+          user_id: string
+          matieres?: string[] | null
         }
         Update: {
           id?: string
-          name?: string | null
-          email?: string
-          password?: string
-          created_at?: string
-          role?: 'tutor'
-          subject?: string[] | null
-          department?: string | null
-          availablehours?: string[] | null
+          user_id?: string
+          matieres?: string[] | null
         }
       }
       admin: {
@@ -112,7 +90,7 @@ export type Database = {
           email: string
           password: string
           created_at: string
-          role: 'admin'
+          role: string
           permissions: string[] | null
         }
         Insert: {
@@ -121,7 +99,7 @@ export type Database = {
           email: string
           password: string
           created_at?: string
-          role?: 'admin'
+          role?: string
           permissions?: string[] | null
         }
         Update: {
@@ -130,40 +108,40 @@ export type Database = {
           email?: string
           password?: string
           created_at?: string
-          role?: 'admin'
+          role?: string
           permissions?: string[] | null
         }
       }
       session: {
         Row: {
           id: string
-          subject: string
-          scheduled_at: string
-          duration: string | null
-          status: 'scheduled' | 'completed' | 'cancelled'
-          created_at: string
-          student_id: string
-          tutor_id: string
+          eleve: string
+          tuteur: string
+          matiere_nom: string
+          matiere_departement: string
+          matiere_annee: number
+          date: string
+          duree: number
         }
         Insert: {
           id?: string
-          subject: string
-          scheduled_at: string
-          duration?: string | null
-          status?: 'scheduled' | 'completed' | 'cancelled'
-          created_at?: string
-          student_id: string
-          tutor_id: string
+          eleve: string
+          tuteur: string
+          matiere_nom: string
+          matiere_departement: string
+          matiere_annee: number
+          date: string
+          duree: number
         }
         Update: {
           id?: string
-          subject?: string
-          scheduled_at?: string
-          duration?: string | null
-          status?: 'scheduled' | 'completed' | 'cancelled'
-          created_at?: string
-          student_id?: string
-          tutor_id?: string
+          eleve?: string
+          tuteur?: string
+          matiere_nom?: string
+          matiere_departement?: string
+          matiere_annee?: number
+          date?: string
+          duree?: number
         }
       }
     }

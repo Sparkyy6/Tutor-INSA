@@ -1,40 +1,42 @@
-export interface User {
-  id: string;
+export interface users {
+  id: number;
   name: string;
   email: string;
-  role: 'student' | 'tutor' | 'admin';
-  createdAt: Date;
   password?: string; // Optional for security reasons
-}
-
-export interface student extends User {
-  enrolledCourses: string[];
-  department: string;
   year: number;
 }
 
-export interface Tutor extends User {
-  subject: string[];
-  department: string;
-  availableHours: string[];
-  students: string[]; // List of student IDs
+
+export interface student extends users  {
+  user_id : number;
+  matiere: string[];
 }
 
-export interface Admin extends User {
+export interface Tutor extends users {
+  tutor_id: number;
+  matiere: string[];
+}
+
+
+export interface Admin{
   permissions: string[]; // List of admin permissions
 }
 
 
 export interface session {
-  id: string;
-  subject: string;
-  scheduledAt: Date;
-  duration: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  createdAt: Date;
-  studentId: string;
-  tutorId: string;
+  eleve_id : number;
+  tuteur_id : number;
+  matiere_nom: string;
+  matiere_departement: string; // Department of the subject
+  matiere_annee : number;
+  duration: number; // Duration of the session in minutes
+  date: string; // Date of the session
 }
 
 
 
+export interface matiere {
+  nom : string; // Name of the subject
+  departement: string; // Department of the subject
+  annee: number; // Year of the subject
+}
