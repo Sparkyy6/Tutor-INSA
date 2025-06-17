@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
-import { registerUser } from './services/auth';
+import { registerUser, loginUser, logoutUser } from './services/auth';
 import { supabase } from './lib/supabase';
 import Home from './components/Home';
 
@@ -16,6 +16,53 @@ function App() {
         year: '',
         departement: 'stpi', // Valeur par défaut
     });
+
+    // Vérifier si l'utilisateur est déjà connecté au chargement
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data } = await supabase.auth.getSession();
+            if (data.session) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', data.session.user.id)
+                    .single();
+                
+                if (userData) {
+                    setCurrentUser(userData);
+                    setIsLoggedIn(true);
+                }
+            }
+        };
+        
+        checkSession();
+        
+        // Configurer l'écouteur d'événements pour les changements d'authentification
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (userData) {
+                        setCurrentUser(userData);
+                        setIsLoggedIn(true);
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    setCurrentUser(null);
+                    setIsLoggedIn(false);
+                    setCurrentView('home');
+                }
+            }
+        );
+        
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, []);
 
     // Gestion dynamique du département en fonction de l'année
     useEffect(() => {
@@ -57,19 +104,8 @@ function App() {
         e.preventDefault();
         
         try {
-            // Vérifier les identifiants dans la base de données
-            const { data: user, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', formData.email)
-                .eq('password', formData.password) // En production, utiliser un hash
-                .single();
-
-            if (error || !user) {
-                alert('Email ou mot de passe incorrect');
-                return;
-            }
-
+            const { user } = await loginUser(formData.email, formData.password);
+            
             // Connexion réussie
             setCurrentUser(user);
             setIsLoggedIn(true);
@@ -85,7 +121,7 @@ function App() {
             });
 
         } catch (error: any) {
-            alert('Erreur lors de la connexion');
+            alert('Email ou mot de passe incorrect');
             console.error('Login error:', error);
         }
     };
@@ -99,7 +135,7 @@ function App() {
         }
         
         try {
-            // Enregistrer uniquement l'utilisateur de base
+            // Enregistrer l'utilisateur avec Supabase Auth
             await registerUser({
                 user: {
                     name: formData.name,
@@ -119,7 +155,8 @@ function App() {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await logoutUser();
         setIsLoggedIn(false);
         setCurrentUser(null);
         setCurrentView('home');

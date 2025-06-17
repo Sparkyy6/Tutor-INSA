@@ -2,7 +2,6 @@ export interface users {
   id: number;
   name: string;
   email: string;
-  password?: string; // Optional for security reasons
   year: number;
 }
 
@@ -32,7 +31,6 @@ export interface session {
   duration: number; // Duration of the session in minutes
   date: string; // Date of the session
 }
-
 
 
 export interface matiere {

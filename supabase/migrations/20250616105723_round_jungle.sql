@@ -11,7 +11,6 @@
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
     year INT CHECK (year BETWEEN 1 AND 5),
     departement TEXT CHECK (departement IN ('stpi', 'gsi', 'sti', 'mri'))
   );
@@ -41,7 +40,6 @@
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     role TEXT NOT NULL DEFAULT 'admin' CHECK (role = 'admin'),
     permissions TEXT[]
