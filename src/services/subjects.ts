@@ -1,25 +1,23 @@
 import { supabase } from '../lib/supabase';
 
-export async function getAvailableSubjects(departement: string, year: number) {
+export async function getAvailableSubjects(userYear: number, userDepartement: string) {
   try {
-    console.log(`Fetching subjects for departement: ${departement}, year: ${year}`);
-    
-    // Construisons la requête de façon plus sûre
     let query = supabase
       .from('matiere')
       .select('*')
-      .lte('annee', year);
-    
-    // Ajoutons la condition de département si elle est fournie
-    if (departement && departement !== 'stpi') {
-      query = query.or(`departement.eq.${departement},departement.eq.stpi`);
+      .lte('annee', userYear); // Only subjects from same or lower years
+
+    // Build department condition
+    let departmentConditions = ['stpi']; // Everyone can teach STPI
+    if (userDepartement !== 'stpi') {
+      departmentConditions.push(userDepartement); // Add user's department
     }
-      
+
+    query = query.in('departement', departmentConditions);
+    
     const { data, error } = await query;
     
     if (error) throw error;
-    
-    console.log(`Retrieved ${data?.length || 0} subjects:`, data);
     return data || [];
     
   } catch (error) {
