@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./certificates:/app/certificates
+      - ./public:/app/public
+      - ./.env:/app/.env
+      - ./vite.config.ts:/app/vite.config.ts
+      # Exclude node_modules from volume mounting
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - HTTPS=true
+    # Health check to ensure the service is running correctly
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "https://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
