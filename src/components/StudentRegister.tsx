@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { matiere } from '../types';
-import { getStudentSubjects, getTutorsForSubject } from '../services/student';
+import { getStudentSubjects, getTutorsForSubject, registerStudentForTutoring } from '../services/student';
 
 interface Tutor {
   id: string;
@@ -25,6 +25,8 @@ export default function StudentRegister() {
   const [selectedSubject, setSelectedSubject] = useState<matiere | null>(null);
   const [availableTutors, setAvailableTutors] = useState<Tutor[]>([]);
   const [isLoadingTutors, setIsLoadingTutors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,11 +70,31 @@ export default function StudentRegister() {
   const handleBookSession = async (tutorId: string) => {
     if (!selectedSubject || !user?.id) return;
     
-    // Implémenter la réservation de session ici
-    alert(`Fonctionnalité de réservation à implémenter avec le tuteur ${tutorId} pour la matière ${selectedSubject.nom}`);
-
-    // Cette fonction pourrait rediriger vers un formulaire de réservation
-    // ou ouvrir une modale pour choisir la date/heure
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      // 1. Enregistrer l'étudiant pour cette matière
+      await registerStudentForTutoring(user.id, selectedSubject);
+      
+      // 2. Afficher un message de succès
+      setSuccessMessage(`Votre demande de tutorat pour ${selectedSubject.nom} a été enregistrée avec succès!`);
+      
+      // 3. Masquer le message après quelques secondes
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      
+      // Note: Dans une version complète, vous pourriez également:
+      // - Créer une entrée dans la table session
+      // - Envoyer une notification au tuteur
+      // - Rediriger vers une page de confirmation ou un calendrier
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement de votre demande");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -106,6 +128,23 @@ export default function StudentRegister() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded shadow">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">
+                {successMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row gap-6">
         {/* Liste des matières */}
         <div className="md:w-1/3">
@@ -176,9 +215,14 @@ export default function StudentRegister() {
                         </div>
                         <button
                           onClick={() => handleBookSession(tutor.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                          disabled={isSubmitting}
+                          className={`${
+                            isSubmitting 
+                              ? 'bg-gray-400' 
+                              : 'bg-red-600 hover:bg-red-700'
+                          } text-white px-4 py-2 rounded-md text-sm font-medium transition-colors`}
                         >
-                          Demander une session
+                          {isSubmitting ? 'En cours...' : 'Demander une session'}
                         </button>
                       </div>
                     </li>
