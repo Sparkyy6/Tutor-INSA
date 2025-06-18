@@ -14,7 +14,7 @@ export interface student extends users  {
 }
 
 export interface Tutor extends users {
-  tutor_id: string;
+  user_id: string;
   matiere: string[];
 }
 
