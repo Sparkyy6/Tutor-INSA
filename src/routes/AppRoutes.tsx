@@ -7,6 +7,7 @@ import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import Home from '../components/Home';
 import TutorRegistration from '../components/TutorRegistration';
+import StudentRegister from '../components/StudentRegister';
 
 const AppRoutes: React.FC = () => {
   const { user, isLoading, signOut } = useAuth();
@@ -30,6 +31,7 @@ const AppRoutes: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home user={{ ...user, departement: user.departement ?? '' }} onLogout={signOut} />} />
           <Route path="/become-tutor" element={<TutorRegistration />} />
+          <Route path="/find-tutor" element={<StudentRegister />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
