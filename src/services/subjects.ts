@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export async function getAvailableSubjects(userYear: number, userDepartement: string) {
+export async function getAvailableSubjects(userYear: number, userDepartement: string, userPreorientation?: string) {
   try {
     let query = supabase
       .from('matiere')
@@ -8,9 +8,15 @@ export async function getAvailableSubjects(userYear: number, userDepartement: st
       .lte('annee', userYear); // Only subjects from same or lower years
 
     // Build department condition
-    let departmentConditions = ['stpi']; // Everyone can teach STPI
-    if (userDepartement !== 'stpi') {
-      departmentConditions.push(userDepartement); // Add user's department
+    let departmentConditions = ['stpi']; // Everyone can teach STPI subjects
+    
+    if (userYear === 2 && userPreorientation) {
+      // 2A students can teach subjects from their preorientation
+      departmentConditions.push(userPreorientation);
+    }
+    else if (userYear >= 3 && userDepartement !== 'stpi') {
+      // 3A+ students can teach subjects from their department
+      departmentConditions.push(userDepartement);
     }
 
     query = query.in('departement', departmentConditions);

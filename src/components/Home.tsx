@@ -7,6 +7,7 @@ interface HomeProps {
     email: string;
     departement: string;
     year?: number;
+    preorientation?: string;
   };
   onLogout: () => void;
 }
@@ -58,8 +59,9 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
               Bienvenue sur la plateforme de tutorat !
             </h2>
             <p className="text-gray-600 mb-4">
-              Vous êtes connecté en tant qu'étudiant du département {user.departement}
-              {user.year && ` en ${user.year}ème année`}.
+              Vous êtes connecté en tant qu'étudiant du département {user.departement.toUpperCase()}
+              {user.year && ` en ${user.year}ème année`}
+              {user.year === 2 && user.preorientation && ` avec une préorientation ${user.preorientation.toUpperCase()}`}.
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
               <div className="flex">

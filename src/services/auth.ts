@@ -1,13 +1,14 @@
 import { supabase } from '../lib/supabase';
 
-// Type pour les nouveaux paramètres
+// Mise à jour du type pour inclure la préorientation
 type RegisterUserParams = {
   user: {
     name: string;
     email: string;
-    password: string; // Toujours nécessaire pour l'inscription mais ne sera pas stocké dans 'users'
+    password: string; 
     year?: number;
     departement?: string;
+    preorientation?: string; // Ajout de la préorientation
   };
   isStudent: boolean;
   isTutor: boolean;
@@ -34,14 +35,16 @@ export async function registerUser(params: RegisterUserParams) {
     if (!authData.user) throw new Error("L'inscription a échoué");
 
     // 2. Insérer les informations supplémentaires dans la table users
+    // Inclure la préorientation si elle existe
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
-        id: authData.user.id, // Utiliser l'ID généré par Supabase Auth
+        id: authData.user.id,
         name: user.name,
         email: user.email,
         year: user.year,
-        departement: user.departement
+        departement: user.departement,
+        preorientation: user.preorientation // Ajout de la préorientation
       })
       .select()
       .single();

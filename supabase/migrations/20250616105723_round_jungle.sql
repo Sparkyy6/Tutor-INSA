@@ -12,7 +12,8 @@
     name TEXT,
     email TEXT UNIQUE NOT NULL,
     year INT CHECK (year BETWEEN 1 AND 5),
-    departement TEXT CHECK (departement IN ('stpi', 'gsi', 'sti', 'mri'))
+    departement TEXT CHECK (departement IN ('stpi', 'gsi', 'sti', 'mri')),
+    preorientation TEXT CHECK (preorientation IN ('gsi', 'sti', 'mri'))
   );
 
   CREATE TABLE IF NOT EXISTS public.matiere (
@@ -152,3 +153,14 @@ CREATE POLICY "Allow update users for all" ON public.users
 DROP POLICY IF EXISTS "Allow delete users for all" ON public.users;
 CREATE POLICY "Allow delete users for all" ON public.users
   FOR DELETE USING (true);
+
+-- Modification de la table users pour ajouter la préorientation
+ALTER TABLE IF EXISTS public.users
+ADD COLUMN IF NOT EXISTS preorientation TEXT CHECK (preorientation IN ('gsi', 'sti', 'mri'));
+
+-- Mise à jour de la contrainte sur le département
+ALTER TABLE IF EXISTS public.users
+DROP CONSTRAINT IF EXISTS users_departement_check;
+
+ALTER TABLE IF EXISTS public.users
+ADD CONSTRAINT users_departement_check CHECK (departement IN ('stpi', 'gsi', 'sti', 'mri'));

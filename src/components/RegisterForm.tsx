@@ -15,18 +15,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
     name: '',
     year: '',
     departement: 'stpi', // Valeur par défaut
+    preorientation: '' // Nouvelle valeur pour la préorientation des 2A
   });
 
   // Gestion dynamique du département en fonction de l'année
   useEffect(() => {
-    // Si l'année est 1, forcer le département à STPI
-    if (formData.year === '1' && formData.departement !== 'stpi') {
+    // Si l'année est 1 ou 2, forcer le département à STPI
+    if ((formData.year === '1' || formData.year === '2') && formData.departement !== 'stpi') {
       setFormData(prev => ({ ...prev, departement: 'stpi' }));
     }
-    // Si l'année est >= 2, et le département est STPI, changer pour GSI par défaut
+    // Si l'année est >= 3, et le département est STPI, changer pour GSI par défaut
     else if (
       formData.year !== '' && 
-      parseInt(formData.year) >= 2 && 
+      parseInt(formData.year) >= 3 && 
       formData.departement === 'stpi'
     ) {
       setFormData(prev => ({ ...prev, departement: 'gsi' }));
@@ -50,13 +51,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
     }
     
     try {
-      await signUp({
+      // Préparer les données utilisateur avec préorientation si nécessaire
+      const userData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         year: formData.year ? Number(formData.year) : undefined,
-        departement: formData.departement
-      });
+        departement: formData.departement,
+        // Ajouter la préorientation uniquement pour les 2A
+        ...(formData.year === '2' && formData.preorientation && { 
+          preorientation: formData.preorientation 
+        })
+      };
+      
+      await signUp(userData);
       
       alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
       onSwitch(); // Rediriger vers la page de connexion
@@ -142,6 +150,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
           </select>
         </div>
         
+        {/* Département - désactivé pour 1A et 2A */}
         <div className="mb-4">
           <label htmlFor="departement" className="block text-sm font-medium text-gray-700 mb-1">Département</label>
           <select
@@ -151,13 +160,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             required
-            disabled={formData.year === '1' || formData.year === ''} // Désactivé si 1ère année
+            disabled={formData.year === '1' || formData.year === '2' || formData.year === ''}
           >
-            {formData.year === '1' && (
+            {(formData.year === '1' || formData.year === '2') && (
               <option value="stpi">STPI - Sciences et Techniques Pour l'Ingénieur</option>
             )}
             
-            {formData.year !== '' && parseInt(formData.year) >= 2 && (
+            {formData.year !== '' && parseInt(formData.year) >= 3 && (
               <>
                 <option value="gsi">GSI - Génie des Systèmes Industriels</option>
                 <option value="sti">STI - Sécurité et Technologies Informatiques</option>
@@ -170,7 +179,35 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
               Les étudiants de 1ère année sont automatiquement affectés au département STPI.
             </p>
           )}
+          {formData.year === '2' && (
+            <p className="text-xs text-gray-500 mt-1">
+              Les étudiants de 2ème année sont en STPI avec une préorientation.
+            </p>
+          )}
         </div>
+        
+        {/* Préorientation pour les 2A */}
+        {formData.year === '2' && (
+          <div className="mb-4">
+            <label htmlFor="preorientation" className="block text-sm font-medium text-gray-700 mb-1">Préorientation</label>
+            <select
+              id="preorientation"
+              name="preorientation"
+              value={formData.preorientation}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              required
+            >
+              <option value="">Sélectionner une préorientation</option>
+              <option value="gsi">GSI - Génie des Systèmes Industriels</option>
+              <option value="sti">STI - Sécurité et Technologies Informatiques</option>
+              <option value="mri">MRI - Maîtrise des Risques Industriels</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Sélectionnez votre préorientation en 2ème année.
+            </p>
+          </div>
+        )}
 
         <button
           type="submit"

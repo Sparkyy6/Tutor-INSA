@@ -3,6 +3,8 @@ export interface users {
   name: string;
   email: string;
   year: number;
+  departement: string;
+  preorientation?: string; // Optionnel, pour les 2A
 }
 
 
