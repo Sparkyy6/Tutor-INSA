@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface HomeProps {
@@ -13,6 +13,18 @@ interface HomeProps {
 
 const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+      // La redirection se fera automatiquement via les routes protégées
+    } catch (error) {
+      console.error("Erreur de déconnexion:", error);
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,10 +38,11 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Bonjour, {user.name}</span>
               <button
-                onClick={onLogout}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
-                Déconnexion
+                {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
               </button>
             </div>
           </div>

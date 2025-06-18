@@ -12,10 +12,11 @@ const AppRoutes: React.FC = () => {
   const { user, isLoading, signOut } = useAuth();
   const [currentView, setCurrentView] = React.useState<'home' | 'login' | 'register'>('home');
   
+  // Afficher un indicateur de chargement lors de la vérification de l'authentification
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center h-screen">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
         </div>
       </Layout>
