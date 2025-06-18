@@ -105,8 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true);
+      
+      // Désabonner l'écouteur avant de se déconnecter
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {});
+      subscription.unsubscribe();
+      
+      // Effectuer la déconnexion
       await logoutUser();
+      
+      // Mettre à jour l'état manuellement
       setUser(null);
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
     } finally {
       setIsLoading(false);
     }
