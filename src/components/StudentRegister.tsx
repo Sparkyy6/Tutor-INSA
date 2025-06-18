@@ -67,7 +67,7 @@ export default function StudentRegister() {
     }
   };
 
-  const handleBookSession = async (tutorId: string) => {
+  const handleBookSession = async () => {
     if (!selectedSubject || !user?.id) return;
     
     try {
@@ -214,7 +214,7 @@ export default function StudentRegister() {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleBookSession(tutor.id)}
+                          onClick={() => handleBookSession()}
                           disabled={isSubmitting}
                           className={`${
                             isSubmitting 
