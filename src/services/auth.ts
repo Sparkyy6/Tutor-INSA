@@ -35,28 +35,32 @@ export async function registerUser(params: RegisterUserParams) {
     if (!authData.user) throw new Error("L'inscription a échoué");
 
     // 2. Insérer les informations supplémentaires dans la table users
-    // Inclure la préorientation si elle existe
-    const { data: userData, error: userError } = await supabase
+    // S'assurer que la préorientation n'est incluse que pour les 2A
+    const userData = {
+      id: authData.user.id,
+      name: user.name,
+      email: user.email,
+      year: user.year,
+      departement: user.departement
+    };
+
+    // Ajouter la préorientation uniquement pour les 2A
+    if (user.year === 2 && user.preorientation) {
+      Object.assign(userData, { preorientation: user.preorientation });
+    }
+
+    const { data: insertedUser, error: userError } = await supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
-        name: user.name,
-        email: user.email,
-        year: user.year,
-        departement: user.departement,
-        preorientation: user.preorientation // Ajout de la préorientation
-      })
+      .insert(userData)
       .select()
       .single();
 
     if (userError) {
-      // En cas d'erreur, essayer de supprimer l'utilisateur créé dans Auth
       await supabase.auth.admin.deleteUser(authData.user.id);
       throw userError;
     }
 
-    // Les rôles (étudiant/tuteur) seront attribués après la connexion
-    return userData;
+    return insertedUser;
   } catch (error) {
     console.error('Error registering user:', error);
     throw error;

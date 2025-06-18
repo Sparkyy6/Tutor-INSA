@@ -4,7 +4,7 @@ export interface users {
   email: string;
   year: number;
   departement: string;
-  preorientation?: string; // Optionnel, pour les 2A
+  preorientation?: string; // Uniquement pour les 2A (year=2)
 }
 
 

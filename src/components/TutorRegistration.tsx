@@ -12,6 +12,7 @@ export default function TutorRegistration() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [userDetails, setUserDetails] = useState<{
+    preorientation: any;
     annee: number;
     departement: string;
   } | null>(null);
@@ -37,6 +38,7 @@ export default function TutorRegistration() {
         }
 
         setUserDetails({
+          preorientation: null, // Adding the required property
           annee: userData.year,
           departement: userData.departement.toLowerCase()
         });
@@ -86,12 +88,26 @@ export default function TutorRegistration() {
       const filtered = subjects.filter(subject => {
         const subjectDept = subject.departement.toLowerCase();
         const userDept = userDetails.departement.toLowerCase();
+        // Récupérer la préorientation seulement pour les 2A
+        const userPreorientation = userDetails.annee === 2 ? userDetails.preorientation?.toLowerCase() : undefined;
 
         if (subject.annee > userDetails.annee) return false;
-        if (subjectDept === 'stpi') return true;
-        if (subjectDept === 'gsi') return userDept === 'gsi';
-        if (subjectDept === 'sti') return userDept === 'sti';
-        if (subjectDept === 'mrii') return userDept === 'mri';
+        
+        // Cas 1A - Uniquement matières STPI 1A
+        if (userDetails.annee === 1) {
+          return subjectDept === 'stpi' && subject.annee === 1;
+        }
+        
+        // Cas 2A - Matières STPI communes 2A + matières de préorientation 2A
+        if (userDetails.annee === 2) {
+          if (subjectDept === 'stpi' && subject.annee === 2) return true;
+          return userPreorientation && subjectDept === userPreorientation && subject.annee === 2;
+        }
+        
+        // Cas 3A+ - Matières de leur département et STPI des années inférieures
+        if (subjectDept === 'stpi' && subject.annee < userDetails.annee) return true;
+        if (subjectDept === userDept) return true;
+        
         return false;
       });
 

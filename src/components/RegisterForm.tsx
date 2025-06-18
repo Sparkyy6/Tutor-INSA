@@ -15,7 +15,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
     name: '',
     year: '',
     departement: 'stpi', // Valeur par défaut
-    preorientation: '' // Nouvelle valeur pour la préorientation des 2A
+    preorientation: '' // Uniquement pour les 2A
   });
 
   // Gestion dynamique du département en fonction de l'année
@@ -31,6 +31,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
       formData.departement === 'stpi'
     ) {
       setFormData(prev => ({ ...prev, departement: 'gsi' }));
+    }
+    
+    // Réinitialiser la préorientation si l'année n'est pas 2
+    if (formData.year !== '2' && formData.preorientation !== '') {
+      setFormData(prev => ({ ...prev, preorientation: '' }));
     }
   }, [formData.year]);
 
@@ -51,7 +56,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
     }
     
     try {
-      // Préparer les données utilisateur avec préorientation si nécessaire
+      // Préparer les données utilisateur avec préorientation uniquement pour les 2A
       const userData = {
         name: formData.name,
         email: formData.email,

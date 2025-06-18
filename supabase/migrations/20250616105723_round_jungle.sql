@@ -19,6 +19,7 @@
   CREATE TABLE IF NOT EXISTS public.matiere (
     nom TEXT,
     departement TEXT,
+    preorientation TEXT CHECK (preorientation IN ('gsi', 'sti', 'mri')),
     annee INT CHECK (annee BETWEEN 1 AND 5),
     PRIMARY KEY (nom, departement,annee)
   );
@@ -164,3 +165,50 @@ DROP CONSTRAINT IF EXISTS users_departement_check;
 
 ALTER TABLE IF EXISTS public.users
 ADD CONSTRAINT users_departement_check CHECK (departement IN ('stpi', 'gsi', 'sti', 'mri'));
+
+-- Modifier la définition de la table users pour restreindre la préorientation aux 2A
+
+-- Supprimer la contrainte existante si elle existe
+ALTER TABLE IF EXISTS public.users
+DROP CONSTRAINT IF EXISTS users_preorientation_check;
+
+-- Ajouter une contrainte conditionnelle pour la préorientation
+ALTER TABLE IF EXISTS public.users
+ADD CONSTRAINT users_preorientation_year_check 
+CHECK (
+  (year = 2 AND preorientation IN ('gsi', 'sti', 'mri')) OR
+  (year != 2 AND preorientation IS NULL)
+);
+
+-- Nettoyer les données existantes
+UPDATE public.users
+SET preorientation = NULL
+WHERE year != 2;
+
+-- Ajout de matières pour la 1ère année
+INSERT INTO public.matiere (nom, departement, annee) VALUES
+('Mathématiques Générales', 'stpi', 1),
+('Physique Fondamentale', 'stpi', 1),
+('Introduction à la Programmation', 'stpi', 1),
+('Chimie', 'stpi', 1);
+
+-- Ajout de matières pour la 5ème année (par exemple spécialités)
+INSERT INTO public.matiere (nom, departement, annee) VALUES
+('IA Avancée', 'gsi', 5),
+('Réseaux Industriels', 'sti', 5),
+('Traitement d''Images', 'mri', 5),
+('Sécurité Informatique', 'gsi', 5);
+
+-- Ajout de quelques utilisateurs tuteurs en 2ème et 3ème année
+INSERT INTO public.users (name, email, year, departement, preorientation) VALUES
+('Alice Dupont', 'alice.dupont@example.com', 2, 'stpi', 'gsi'),
+('Bob Martin', 'bob.martin@example.com', 2, 'stpi', 'sti'),
+('Chloé Petit', 'chloe.petit@example.com', 3, 'mri', NULL),
+('David Lefevre', 'david.lefevre@example.com', 3, 'gsi', NULL);
+
+-- Ajout des tuteurs correspondant aux users ci-dessus
+INSERT INTO public.tutor (user_id, matieres) VALUES
+((SELECT id FROM public.users WHERE email = 'alice.dupont@example.com'), ARRAY['Introduction à la Programmation', 'Mathématiques Générales']),
+((SELECT id FROM public.users WHERE email = 'bob.martin@example.com'), ARRAY['Physique Fondamentale', 'Chimie']),
+((SELECT id FROM public.users WHERE email = 'chloe.petit@example.com'), ARRAY['Traitement d''Images']),
+((SELECT id FROM public.users WHERE email = 'david.lefevre@example.com'), ARRAY['IA Avancée', 'Sécurité Informatique']);
