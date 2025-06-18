@@ -9,11 +9,13 @@ export interface users {
 
 
 export interface student extends users  {
+  student_id?: string;
   user_id : string;
   matiere: string[];
 }
 
 export interface Tutor extends users {
+  tutor_id?: string;
   user_id: string;
   matiere: string[];
 }
