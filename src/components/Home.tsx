@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface HomeProps {
   user: {
@@ -13,7 +13,6 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
-  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -77,23 +76,19 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div 
-              onClick={() => navigate('/find-tutor')}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer"
-            >
-              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
-                <span className="text-blue-600 text-xl">📚</span>
+            {/* Action Trouver un tuteur */}
+            <Link to="/find-tutor" className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-lg mb-4">
+                <span className="text-red-600 text-xl">🔍</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Trouver un tuteur</h3>
               <p className="text-gray-600 text-sm">
-                Recherchez de l'aide dans vos matières difficiles
+                Cherchez des tuteurs pour les matières qui vous intéressent
               </p>
-            </div>
+            </Link>
 
-            <div 
-              onClick={() => navigate('/become-tutor')}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer"
-            >
+            {/* Action Devenir tuteur */}
+            <Link to="/become-tutor" className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
                 <span className="text-green-600 text-xl">👨‍🏫</span>
               </div>
@@ -101,17 +96,29 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
               <p className="text-gray-600 text-sm">
                 Aidez d'autres étudiants dans vos matières fortes
               </p>
-            </div>
+            </Link>
 
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer">
+            {/* Messagerie */}
+            <Link to="/conversations" className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+                <span className="text-blue-600 text-xl">💬</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Messagerie</h3>
+              <p className="text-gray-600 text-sm">
+                Accédez à vos conversations avec les tuteurs et étudiants
+              </p>
+            </Link>
+
+            {/* Nouvelle action: Gérer mes sessions */}
+            <Link to="/sessions" className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4">
                 <span className="text-purple-600 text-xl">📅</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Mes sessions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Gérer mes sessions</h3>
               <p className="text-gray-600 text-sm">
-                Gérez vos sessions de tutorat programmées
+                Consultez et gérez vos sessions de tutorat programmées
               </p>
-            </div>
+            </Link>
           </div>
         </div>
       </main>

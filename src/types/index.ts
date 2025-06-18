@@ -42,3 +42,20 @@ export interface matiere {
   departement: string; // Department of the subject
   annee: number; // Year of the subject
 }
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  student_id: string;
+  tutor_id: string;
+  subject: string | null;
+  created_at: string;
+}
