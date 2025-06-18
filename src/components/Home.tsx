@@ -111,28 +111,6 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
             </div>
           </div>
 
-          {/* Stats Section */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">0</div>
-                <div className="text-sm text-gray-600">Sessions prévues</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">0</div>
-                <div className="text-sm text-gray-600">Sessions terminées</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-2xl font-bold text-purple-600">0</div>
-                <div className="text-sm text-gray-600">Matières suivies</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 text-center">
-                <div className="text-2xl font-bold text-red-600">0</div>
-                <div className="text-sm text-gray-600">Heures de tutorat</div>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
     </div>
