@@ -6,6 +6,8 @@
   DROP TABLE IF EXISTS public.admin CASCADE;
   DROP TABLE IF EXISTS public.users CASCADE;
   DROP TABLE IF EXISTS public.matiere CASCADE;
+  DROP TABLE IF EXISTS public.conversation CASCADE;
+  DROP TABLE IF EXISTS public.message CASCADE;
 
   CREATE TABLE IF NOT EXISTS public.users (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,7 +62,25 @@
     CONSTRAINT fk_matiere FOREIGN KEY (matiere_nom, matiere_departement,matiere_annee) 
     REFERENCES public.matiere(nom, departement, annee)
   );
-    
+
+  -- Table des conversations
+  CREATE TABLE IF NOT EXISTS public.conversation (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+    tutor_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+    subject TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- Table des messages
+  CREATE TABLE IF NOT EXISTS public.message (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id uuid REFERENCES public.conversation(id) ON DELETE CASCADE,
+    sender_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
   -- Activer la Row Level Security (RLS)
 
   ALTER TABLE public.student ENABLE ROW LEVEL SECURITY;
@@ -68,6 +88,8 @@
   ALTER TABLE public.admin ENABLE ROW LEVEL SECURITY;
   ALTER TABLE public.session ENABLE ROW LEVEL SECURITY;
   ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE public.conversation ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE public.message ENABLE ROW LEVEL SECURITY;
 
 
   -- STUDENT
@@ -212,3 +234,19 @@ INSERT INTO public.tutor (user_id, matieres) VALUES
 ((SELECT id FROM public.users WHERE email = 'bob.martin@example.com'), ARRAY['Physique Fondamentale', 'Chimie']),
 ((SELECT id FROM public.users WHERE email = 'chloe.petit@example.com'), ARRAY['Traitement d''Images']),
 ((SELECT id FROM public.users WHERE email = 'david.lefevre@example.com'), ARRAY['IA Avancée', 'Sécurité Informatique']);
+
+-- RLS et policies (optionnel, à adapter selon tes besoins)
+ALTER TABLE public.conversation ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow select conversation for all" ON public.conversation;
+CREATE POLICY "Allow select conversation for all" ON public.conversation FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow insert conversation for all" ON public.conversation;
+CREATE POLICY "Allow insert conversation for all" ON public.conversation FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow select message for all" ON public.message;
+CREATE POLICY "Allow select message for all" ON public.message FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow insert message for all" ON public.message;
+CREATE POLICY "Allow insert message for all" ON public.message FOR INSERT WITH CHECK (true);

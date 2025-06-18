@@ -144,6 +144,52 @@ export type Database = {
           duree?: number
         }
       }
+      conversation: {
+        Row: {
+          id: string
+          student_id: string
+          tutor_id: string
+          subject: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          tutor_id: string
+          subject?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          tutor_id?: string
+          subject?: string | null
+          created_at?: string
+        }
+      }
+      message: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          sender_id?: string
+          content?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
