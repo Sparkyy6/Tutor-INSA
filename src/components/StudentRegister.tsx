@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { matiere } from '../types';
 import { getStudentSubjects, getTutorsForSubject, registerStudentForTutoring } from '../services/student';
-
-interface Tutor {
-  id: string;
-  user_id: string;
-  name: string;
-  email: string;
-  year: number;
-  departement: string;
-}
+import { createOrGetConversation } from '../services/chat';
+import { matiere, Tutor } from '../types';
 
 export default function StudentRegister() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<matiere[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +20,6 @@ export default function StudentRegister() {
   const [availableTutors, setAvailableTutors] = useState<Tutor[]>([]);
   const [isLoadingTutors, setIsLoadingTutors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +51,13 @@ export default function StudentRegister() {
 
     try {
       const tutors = await getTutorsForSubject(subject);
-      setAvailableTutors(tutors);
+      // Map tutors to match the Tutor type
+      const mappedTutors: Tutor[] = tutors.map((tutor: any) => ({
+        ...tutor,
+        tutor_id: tutor.tutor_id ?? tutor.id, // fallback if tutor_id is missing
+        matiere: subject.nom,
+      }));
+      setAvailableTutors(mappedTutors);
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : "Erreur lors de la récupération des tuteurs");
@@ -67,7 +66,7 @@ export default function StudentRegister() {
     }
   };
 
-  const handleBookSession = async () => {
+  const handleBookSession = async (tutorId: string) => {
     if (!selectedSubject || !user?.id) return;
     
     try {
@@ -77,18 +76,16 @@ export default function StudentRegister() {
       // 1. Enregistrer l'étudiant pour cette matière
       await registerStudentForTutoring(user.id, selectedSubject);
       
-      // 2. Afficher un message de succès
-      setSuccessMessage(`Votre demande de tutorat pour ${selectedSubject.nom} a été enregistrée avec succès!`);
+      // 2. Créer ou récupérer une conversation entre l'étudiant et le tuteur
+      const conversation = await createOrGetConversation(
+        user.id, 
+        tutorId, 
+        selectedSubject.nom
+      );
       
-      // 3. Masquer le message après quelques secondes
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
+      // 3. Rediriger vers le chatroom
+      navigate(`/chat/${conversation.id}`);
       
-      // Note: Dans une version complète, vous pourriez également:
-      // - Créer une entrée dans la table session
-      // - Envoyer une notification au tuteur
-      // - Rediriger vers une page de confirmation ou un calendrier
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement de votre demande");
@@ -128,23 +125,6 @@ export default function StudentRegister() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      {successMessage && (
-        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded shadow">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-green-700">
-                {successMessage}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
       <div className="flex flex-col md:flex-row gap-6">
         {/* Liste des matières */}
         <div className="md:w-1/3">
@@ -214,7 +194,7 @@ export default function StudentRegister() {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleBookSession()}
+                          onClick={() => handleBookSession(tutor.user_id)}
                           disabled={isSubmitting}
                           className={`${
                             isSubmitting 

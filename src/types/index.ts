@@ -1,5 +1,5 @@
 export interface users {
-  id: number;
+  id: string;
   name: string;
   email: string;
   year: number;
@@ -9,12 +9,12 @@ export interface users {
 
 
 export interface student extends users  {
-  user_id : number;
+  user_id : string;
   matiere: string[];
 }
 
 export interface Tutor extends users {
-  tutor_id: number;
+  tutor_id: string;
   matiere: string[];
 }
 

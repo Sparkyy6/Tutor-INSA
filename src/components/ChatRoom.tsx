@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMessages, sendMessage } from '../services/chat';
 import { Message } from '../types/chat.types';
+import { supabase } from '../lib/supabase';
 
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -14,10 +15,30 @@ export default function ChatRoom() {
 
   useEffect(() => {
     if (!conversationId) return;
+    
+    // Charger les messages initiaux
     setLoading(true);
     getMessages(conversationId)
       .then(setMessages)
       .finally(() => setLoading(false));
+      
+    // Configurer l'abonnement aux nouveaux messages
+    const subscription = supabase
+      .channel(`conversation-${conversationId}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'message',
+        filter: `conversation_id=eq.${conversationId}`
+      }, (payload) => {
+        const newMessage = payload.new as Message;
+        setMessages(prev => [...prev, newMessage]);
+      })
+      .subscribe();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [conversationId]);
 
   // Scroll to bottom on new message
