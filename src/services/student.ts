@@ -131,3 +131,73 @@ export async function getTutorsForSubject(subject: matiere) {
     throw error;
   }
 }
+
+/**
+ * Enregistre un étudiant qui souhaite recevoir du tutorat pour une matière
+ */
+export async function registerStudentForTutoring(userId: string, matiereData: matiere) {
+  try {
+    // 1. Vérifier si l'étudiant existe déjà dans la table student
+    const { data: existingStudent, error: checkError } = await supabase
+      .from('student')
+      .select('id, matieres')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (checkError) throw checkError;
+    
+    // Convertir la matière en format JSON string 
+    const matiereJson = JSON.stringify({
+      nom: matiereData.nom,
+      departement: matiereData.departement,
+      annee: matiereData.annee
+    });
+    
+    if (existingStudent) {
+      // 2a. Si l'étudiant existe, mettre à jour ses matières
+      const updatedMatieres = existingStudent.matieres || [];
+      
+      // Vérifier si la matière n'est pas déjà dans la liste
+      const matiereExists = updatedMatieres.some((m: string) => {
+        try {
+          const parsed = JSON.parse(m);
+          return parsed.nom === matiereData.nom && 
+                 parsed.departement === matiereData.departement &&
+                 parsed.annee === matiereData.annee;
+        } catch {
+          return false;
+        }
+      });
+      
+      if (!matiereExists) {
+        updatedMatieres.push(matiereJson);
+        
+        const { error: updateError } = await supabase
+          .from('student')
+          .update({ matieres: updatedMatieres })
+          .eq('id', existingStudent.id);
+          
+        if (updateError) throw updateError;
+      }
+      
+      return { updated: true, id: existingStudent.id };
+    } else {
+      // 2b. Si l'étudiant n'existe pas, le créer avec cette matière
+      const { data: newStudent, error: insertError } = await supabase
+        .from('student')
+        .insert({ 
+          user_id: userId,
+          matieres: [matiereJson]
+        })
+        .select()
+        .single();
+        
+      if (insertError) throw insertError;
+      
+      return { updated: false, id: newStudent.id };
+    }
+  } catch (error) {
+    console.error('Error registering student for tutoring:', error);
+    throw error;
+  }
+}
