@@ -1,60 +1,38 @@
-/**
- * Utilitaire pour gérer les cookies et les problèmes liés
- */
+let cleanupPerformed = false;
 
-// Fonction pour nettoyer les cookies de session si nécessaire
 export function clearAuthCookies() {
+  if (cleanupPerformed) return true;
+  
   try {
-    // Supprimer les cookies liés à Supabase/Auth
+    // Clear cookies
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=').map(c => c.trim());
-      if (name.includes('sb-') || name.includes('supabase') || name.includes('auth')) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}; secure;`;
+      if (name.startsWith('sb-') || name.includes('supabase') || name.includes('auth')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       }
     });
     
-    // Nettoyer aussi le localStorage
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('tutor-insa-auth'))) {
-        keysToRemove.push(key);
+    // Clear localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') || key.includes('supabase')) {
+        localStorage.removeItem(key);
       }
-    }
+    });
     
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    // Nettoyer aussi sessionStorage
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
-        sessionStorage.removeItem(key);
-      }
-    }
-    
-    console.log("Cookies et stockage d'authentification nettoyés");
+    cleanupPerformed = true;
     return true;
-  } catch (err) {
-    console.error("Erreur lors du nettoyage des cookies:", err);
+  } catch (error) {
+    console.error('Failed to clear auth data:', error);
     return false;
   }
 }
 
-// Fonction pour vérifier si le chargement est trop long
-export function setupLoadingTimeout(timeout = 8000) {  
-  // Marquer le début du chargement
-  const startTime = Date.now();
-  
+export function setupLoadingTimeout(timeout = 5000) {  
   return setTimeout(() => {
-    const loadingTime = Date.now() - startTime;
-    console.log(`Temps de chargement: ${loadingTime}ms`);
-    
-    // Si la page est bloquée plus de X secondes sur le chargement
-    const loadingIndicator = document.querySelector('.loading-indicator');
-    if (loadingIndicator || document.readyState !== 'complete') {
-      console.warn('Chargement anormalement long, nettoyage des cookies...');
+    if (document.readyState !== 'complete') {
+      console.warn('Loading timeout - clearing auth data');
       clearAuthCookies();
-      window.location.href = '/?refresh=' + Date.now(); // Ajouter paramètre pour éviter le cache
+      window.location.reload();
     }
   }, timeout);
 }
