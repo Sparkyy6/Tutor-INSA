@@ -21,21 +21,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Session management
   const manageSession = useCallback(async () => {
     try {
-      setIsLoading(true);
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error || !session) {
+        console.log('Pas de session active');
         setUser(null);
         return;
       }
 
-      const { data: userData } = await supabase
+      // Vérifier si l'utilisateur existe dans la table users
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, name, email, year, departement, preorientation')
         .eq('id', session.user.id)
         .single();
 
-      if (JSON.stringify(userRef.current) !== JSON.stringify(userData)) {
+      if (userError) {
+        console.error('Erreur lors de la récupération des données utilisateur:', userError);
+        
+        // Si l'utilisateur n'existe pas dans la table users mais existe dans auth
+        if (userError.code === 'PGRST116') {
+          console.log('Création du profil utilisateur...');
+          // Créer l'entrée dans users à partir des métadonnées
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              name: session.user.user_metadata.name || 'Utilisateur',
+              email: session.user.email,
+              departement: session.user.user_metadata.departement || 'stpi',
+              year: 1 // Valeur par défaut
+            });
+            
+          if (insertError) {
+            console.error('Erreur création profil:', insertError);
+            setUser(null);
+            return;
+          }
+          
+          // Récupérer les données fraîchement créées
+          const { data: newUserData } = await supabase
+            .from('users')
+            .select('id, name, email, year, departement, preorientation')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (newUserData) {
+            userRef.current = newUserData;
+            setUser(newUserData);
+          }
+        } else {
+          setUser(null);
+        }
+        return;
+      }
+
+      if (userData) {
+        console.log('Données utilisateur récupérées:', userData);
         userRef.current = userData;
         setUser(userData);
       }
@@ -72,6 +114,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = useCallback(async (userData: any) => {
     try {
       setIsLoading(true);
+      
+      // 1. Créer l'utilisateur dans auth.users
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -85,6 +129,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) throw error;
       if (!data.user) throw new Error('Registration failed');
+
+      // 2. Insérer l'utilisateur dans la table public.users
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          name: userData.name,
+          email: userData.email,
+          year: userData.year,
+          departement: userData.departement,
+          preorientation: userData.preorientation
+        });
+
+      if (insertError) {
+        console.error('Error inserting into users table:', insertError);
+        throw new Error("Erreur lors de la création du profil utilisateur");
+      }
 
       await manageSession();
     } catch (error) {
