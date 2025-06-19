@@ -14,30 +14,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
     confirmPassword: '',
     name: '',
     year: '',
-    departement: 'stpi', // Valeur par défaut
-    preorientation: '' // Uniquement pour les 2A
+    departement: 'stpi',
+    preorientation: ''
   });
 
-  // Gestion dynamique du département en fonction de l'année
-  useEffect(() => {
-    // Si l'année est 1 ou 2, forcer le département à STPI
-    if ((formData.year === '1' || formData.year === '2') && formData.departement !== 'stpi') {
-      setFormData(prev => ({ ...prev, departement: 'stpi' }));
-    }
-    // Si l'année est >= 3, et le département est STPI, changer pour GSI par défaut
-    else if (
-      formData.year !== '' && 
-      parseInt(formData.year) >= 3 && 
-      formData.departement === 'stpi'
-    ) {
-      setFormData(prev => ({ ...prev, departement: 'gsi' }));
-    }
-    
-    // Réinitialiser la préorientation si l'année n'est pas 2
-    if (formData.year !== '2' && formData.preorientation !== '') {
-      setFormData(prev => ({ ...prev, preorientation: '' }));
-    }
-  }, [formData.year]);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  // Validation des champs
+  const validateEmail = (email: string) => {
+    const regex = /^[A-Za-z0-9._%+-]+@insa-cvl\.fr$/;
+    return regex.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+    return regex.test(password);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -45,34 +41,78 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
       ...formData,
       [name]: value,
     });
+
+    // Validation en temps réel
+    if (name === 'email') {
+      setErrors({
+        ...errors,
+        email: validateEmail(value) ? '' : 'Veuillez utiliser une adresse @insa-cvl.fr'
+      });
+    }
+
+    if (name === 'password') {
+      setErrors({
+        ...errors,
+        password: validatePassword(value) ? '' : 'Le mot de passe doit contenir 8 caractères minimum, une majuscule, un chiffre et un caractère spécial'
+      });
+    }
+
+    if (name === 'confirmPassword') {
+      setErrors({
+        ...errors,
+        confirmPassword: value === formData.password ? '' : 'Les mots de passe ne correspondent pas'
+      });
+    }
   };
+
+  // Gestion dynamique du département en fonction de l'année
+  useEffect(() => {
+    if ((formData.year === '1' || formData.year === '2') && formData.departement !== 'stpi') {
+      setFormData(prev => ({ ...prev, departement: 'stpi' }));
+    }
+    else if (formData.year !== '' && parseInt(formData.year) >= 3 && formData.departement === 'stpi') {
+      setFormData(prev => ({ ...prev, departement: 'gsi' }));
+    }
+    
+    if (formData.year !== '2' && formData.preorientation !== '') {
+      setFormData(prev => ({ ...prev, preorientation: '' }));
+    }
+  }, [formData.year]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation finale avant soumission
+    if (!validateEmail(formData.email)) {
+      alert("Veuillez utiliser une adresse email @insa-cvl.fr valide");
+      return;
+    }
+
+    if (!validatePassword(formData.password)) {
+      alert("Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas!");
+      alert("Les mots de passe ne correspondent pas");
       return;
     }
     
     try {
-      // Préparer les données utilisateur avec préorientation uniquement pour les 2A
       const userData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         year: formData.year ? Number(formData.year) : undefined,
         departement: formData.departement,
-        // Ajouter la préorientation uniquement pour les 2A
         ...(formData.year === '2' && formData.preorientation && { 
           preorientation: formData.preorientation 
         })
       };
       
       await signUp(userData);
-      
       alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-      onSwitch(); // Rediriger vers la page de connexion
+      onSwitch();
     } catch (error: any) {
       alert(error.message || 'Erreur lors de l\'inscription');
     }
@@ -97,16 +137,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
         </div>
         
         <div className="mb-4">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email INSA-CVL</label>
           <input
             type="email"
             id="email"
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent`}
             required
+            placeholder="prenom.nom@insa-cvl.fr"
           />
+          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
         </div>
         
         <div className="mb-4">
@@ -117,9 +159,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent`}
             required
+            placeholder="8+ caractères, 1 majuscule, 1 chiffre, 1 spécial"
           />
+          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
         </div>
         
         <div className="mb-4">
@@ -130,9 +174,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent`}
             required
           />
+          {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
         </div>
 
         {/* Informations sur le cursus */}
@@ -216,8 +261,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch, onBack }) => {
 
         <button
           type="submit"
-          disabled={isLoading}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 ease-in-out mt-6"
+          disabled={isLoading || !!errors.email || !!errors.password || !!errors.confirmPassword}
+          className={`w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 ease-in-out mt-6 ${(isLoading || !!errors.email || !!errors.password || !!errors.confirmPassword) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isLoading ? 'Inscription...' : 'S\'inscrire'}
         </button>
