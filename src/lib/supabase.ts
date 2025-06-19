@@ -8,6 +8,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Erreur: Variables d\'environnement Supabase manquantes');
 }
 
+import { clearAuthCookies } from './cookieManager'; 
+
 // Ajouter des options de configuration pour améliorer la gestion de session
 export const supabase = createClient<Database>(
   supabaseUrl, 
@@ -34,26 +36,43 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Ajouter un gestionnaire de timeout lors de l'initialisation de Supabase
+
 // Fonction utilitaire pour tester la connexion
 export async function testConnection() {
   try {
-    // Tente de récupérer un utilisateur pour vérifier la connexion
-    const { data, error } = await supabase
-      .from('users')
-      .select('id')
-      .limit(1);
+    const start = Date.now();
+    const { error } = await supabase.from('votre_table_test').select('count()', { count: 'exact' }).limit(1);
+    const duration = Date.now() - start;
+    
+    console.log(`Temps de réponse Supabase: ${duration}ms`);
     
     if (error) {
-      console.error('Erreur de connexion à la base de données:', error);
-      return { success: false, error };
+      console.error('Erreur de connexion à Supabase:', error);
+      return false;
     }
     
-    console.log('Connexion à Supabase réussie!');
-    return { success: true, data };
+    return true;
   } catch (err) {
-    console.error('Test de connexion échoué:', err);
-    return { success: false, error: err };
+    console.error('Exception lors du test de connexion:', err);
+    return false;
   }
+}
+
+// Initialiser Supabase avec promesse de timeout
+export function initSupabase() {
+  let connectionTimeout = setTimeout(() => {
+    console.error('Timeout de connexion à Supabase');
+    clearAuthCookies(); // Assurer que cette fonction est importée
+    window.location.reload();
+  }, 15000);
+  
+  // Tester la connexion et annuler le timeout si succès
+  testConnection().then(success => {
+    if (success) {
+      clearTimeout(connectionTimeout);
+    }
+  });
 }
 
 // Fonction pour vérifier que toutes les tables nécessaires existent

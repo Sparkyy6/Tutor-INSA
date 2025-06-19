@@ -9,7 +9,7 @@ export function clearAuthCookies() {
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=').map(c => c.trim());
       if (name.includes('sb-') || name.includes('supabase') || name.includes('auth')) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}; secure;`;
       }
     });
     
@@ -24,21 +24,37 @@ export function clearAuthCookies() {
     
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
+    // Nettoyer aussi sessionStorage
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
+        sessionStorage.removeItem(key);
+      }
+    }
+    
+    console.log("Cookies et stockage d'authentification nettoyés");
     return true;
-  } catch (error) {
-    console.error('Erreur lors du nettoyage des cookies:', error);
+  } catch (err) {
+    console.error("Erreur lors du nettoyage des cookies:", err);
     return false;
   }
 }
 
 // Fonction pour vérifier si le chargement est trop long
-export function setupLoadingTimeout(timeout = 10000) {  
+export function setupLoadingTimeout(timeout = 8000) {  
+  // Marquer le début du chargement
+  const startTime = Date.now();
+  
   return setTimeout(() => {
-    // Si la page est bloquée plus de 10 secondes sur le chargement
-    if (document.readyState !== 'complete') {
+    const loadingTime = Date.now() - startTime;
+    console.log(`Temps de chargement: ${loadingTime}ms`);
+    
+    // Si la page est bloquée plus de X secondes sur le chargement
+    const loadingIndicator = document.querySelector('.loading-indicator');
+    if (loadingIndicator || document.readyState !== 'complete') {
       console.warn('Chargement anormalement long, nettoyage des cookies...');
       clearAuthCookies();
-      window.location.reload();
+      window.location.href = '/?refresh=' + Date.now(); // Ajouter paramètre pour éviter le cache
     }
   }, timeout);
 }
