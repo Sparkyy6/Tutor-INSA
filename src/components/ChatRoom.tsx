@@ -54,8 +54,7 @@ export default function ChatRoom() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !user || !conversationId) return;
-    const msg = await sendMessage(conversationId, user.id, input.trim());
-    setMessages((prev) => [...prev, msg]);
+    await sendMessage(conversationId, user.id, input.trim());
     setInput('');
   };
 
@@ -93,35 +92,72 @@ export default function ChatRoom() {
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-gray-500">
                       Aucun message. Commencez la conversation !
                     </div>
                   ) : (
-                    messages.map((msg) => (
-                      <div key={msg.id} className={`mb-2 ${msg.sender_id === user?.id ? 'text-right' : 'text-left'}`}>
-                        <span className={`inline-block px-3 py-2 rounded-lg ${msg.sender_id === user?.id ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {msg.content}
-                        </span>
-                        <div className="text-xs text-gray-400">{new Date(msg.created_at).toLocaleTimeString()}</div>
-                      </div>
-                    ))
+                    messages.map((msg) => {
+                      const isMe = msg.sender_id === user?.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex items-end ${isMe ? 'justify-end' : 'justify-start'}`}
+                        >
+                          {!isMe && (
+                            <div className="flex-shrink-0 mr-2">
+                              <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-bold shadow">
+                                {conversationDetails?.otherUserName?.[0] || "?"}
+                              </div>
+                            </div>
+                          )}
+                          <div className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl shadow
+                            ${isMe
+                              ? 'bg-gradient-to-br from-red-500 to-red-400 text-white rounded-br-none'
+                              : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                            }`
+                          }
+                          >
+                            <div className="whitespace-pre-line break-words">{msg.content}</div>
+                            <div className={`text-xs mt-1 ${isMe ? 'text-red-100' : 'text-gray-400'} text-right`}>
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                          {isMe && (
+                            <div className="flex-shrink-0 ml-2">
+                              <div className="w-8 h-8 rounded-full bg-red-200 flex items-center justify-center text-red-700 font-bold shadow">
+                                {user?.name?.[0] || "M"}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSend} className="border-t p-4 flex gap-2">
+                <form
+                  onSubmit={handleSend}
+                  className="border-t p-4 flex gap-2 bg-gray-50 sticky bottom-0"
+                  style={{ boxShadow: '0 -2px 8px rgba(0,0,0,0.03)' }}
+                >
                   <input
-                    className="flex-1 border rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:border-red-500 bg-white shadow-sm"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Votre message..."
                     autoComplete="off"
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={!input.trim()}
-                    className={`px-4 py-2 rounded font-medium ${input.trim() ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                    className={`px-6 py-2 rounded-full font-semibold transition
+                      ${input.trim()
+                        ? 'bg-red-600 hover:bg-red-700 text-white shadow'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`
+                    }
                   >
                     Envoyer
                   </button>
