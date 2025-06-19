@@ -17,16 +17,19 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
-      // Définir un timeout pour éviter les blocages
       storageKey: 'tutor-insa-auth-token',
-      flowType: 'pkce'
+      flowType: 'pkce',
+      debug: process.env.NODE_ENV === 'development'
     },
     global: {
       headers: { 'x-application-name': 'tutor-insa' },
     },
-    // Configurer des timeouts pour éviter les requêtes bloquées
+    // Configurer des timeouts plus longs pour éviter les problèmes
     realtime: {
-      timeout: 10000
+      timeout: 20000
+    },
+    db: {
+      schema: 'public'
     }
   }
 );

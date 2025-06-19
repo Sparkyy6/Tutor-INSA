@@ -28,25 +28,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Vérifier la session au chargement avec timeout
-    const checkSession = async () => {
+    // Vérifier la session au chargement avec timeout et réessai
+    const checkSession = async (retryCount = 0) => {
       try {
         setIsLoading(true);
         
+        // Timeout plus long pour le premier chargement
+        const timeoutDuration = 10000; // Augmenté à 10s
+        console.log(`Vérification de session (tentative ${retryCount + 1})...`);
+        
         // Ajouter un timeout pour éviter un blocage indéfini
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ timedOut: true }), 5000));
+        const timeoutPromise = new Promise(resolve => 
+          setTimeout(() => resolve({ timedOut: true }), timeoutDuration)
+        );
         const sessionPromise = supabase.auth.getSession();
         
         // Utiliser la première promesse qui se résout
         const result: any = await Promise.race([sessionPromise, timeoutPromise]);
         
-        // Si timeout, on considère qu'il n'y a pas de session
+        // Si timeout, on essaie à nouveau si on n'a pas dépassé le nombre max de tentatives
         if (result.timedOut) {
-          console.warn('Session check timed out, assuming logged out');
+          console.warn('Session check timed out');
+          if (retryCount < 2) { // Permettre deux tentatives supplémentaires
+            console.log('Nouvelle tentative de vérification de session...');
+            setTimeout(() => checkSession(retryCount + 1), 1000);
+            return;
+          }
+          // Si on a déjà réessayé, on considère qu'il n'y a pas de session
+          console.warn('Session check failed after retries, assuming logged out');
           setUser(null);
+          setIsLoading(false);
         } else {
           const { data } = result;
-          
           if (data?.session) {
             // Limiter les informations récupérées pour accélérer
             const { data: userData } = await supabase
@@ -56,23 +69,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .single();
               
             setUser(userData);
+          } else {
+            setUser(null);
           }
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Session check error:', error);
         // En cas d'erreur, on reset pour permettre la connexion
         setUser(null);
         clearAuthCookies(); // Nettoyer les cookies en cas d'erreur
-      } finally {
         setIsLoading(false);
       }
     };
     
-    checkSession();
+    // Configurer un timer court pour déclencher la vérification de session
+    // Cela permet au navigateur de finir l'initialisation des cookies
+    setTimeout(() => checkSession(), 300);
     
     // Configurer l'écouteur d'authentification avec nettoyage approprié
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_sessionEvent, session) => {
+        console.log('Auth state change:', _sessionEvent);
+        
         if (session) {
           const { data } = await supabase
             .from('users')
