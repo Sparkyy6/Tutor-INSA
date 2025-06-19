@@ -1,6 +1,6 @@
-# 🎓 Tutor-INSA
+# 🎓 Tutor'INSA
 
-Tutor-INSA is a web platform for students at INSA Centre-Val de Loire to request and offer academic tutoring. It features secure user authentication, real-time messaging, calendar management with export options, and strong privacy controls.
+Tutor'INSA is a web platform for students at INSA Centre-Val de Loire to request and offer academic tutoring. It features secure user authentication, real-time messaging, calendar management with export options, and strong privacy controls.
 
 ## 🚀 Features
 

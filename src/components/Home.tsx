@@ -33,7 +33,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">INSA Tutoring</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">Tutor'INSA</h1>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Bonjour, {user.name}</span>

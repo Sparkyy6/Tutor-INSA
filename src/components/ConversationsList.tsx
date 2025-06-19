@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserConversations } from '../services/chat';
-import Layout from './Layout';
 
 interface ConversationPreview {
   id: string;

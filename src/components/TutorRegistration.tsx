@@ -133,7 +133,7 @@ export default function TutorRegistration() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-gradient-to-r from-red-600 to-red-700 text-white py-6 px-4 text-center shadow-md">
-        <h1 className="text-3xl md:text-4xl font-bold">INSA Tutoring</h1>
+        <h1 className="text-3xl md:text-4xl font-bold">Tutor'INSA</h1>
       </header>
       
       {/* Main content */}
