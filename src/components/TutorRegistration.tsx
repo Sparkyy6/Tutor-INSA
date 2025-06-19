@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { matiere } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export default function TutorRegistration() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [subjects, setSubjects] = useState<matiere[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<matiere[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<matiere[]>([]);
@@ -157,7 +159,7 @@ export default function TutorRegistration() {
       if (upsertError) throw upsertError;
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => navigate('/'), 1000);
     } catch (err) {
       setError("Erreur lors de l'enregistrement");
     } finally {
