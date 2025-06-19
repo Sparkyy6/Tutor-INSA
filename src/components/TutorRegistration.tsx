@@ -1,265 +1,182 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { matiere } from '../types';
-import { useNavigate, Link } from 'react-router-dom';
+
+const SubjectItem = memo(({ subject, selected, onToggle }: {
+  subject: matiere;
+  selected: boolean;
+  onToggle: (name: string) => void;
+}) => (
+  <div className="flex items-center p-3 border rounded hover:bg-gray-50">
+    <input
+      type="checkbox"
+      id={subject.nom}
+      checked={selected}
+      onChange={() => onToggle(subject.nom)}
+      className="mr-3"
+    />
+    <label htmlFor={subject.nom} className="cursor-pointer flex-1">
+      <span className="font-medium">{subject.nom}</span>
+      <span className="text-sm text-gray-500 block">
+        {subject.departement.toUpperCase()} - {subject.annee}A
+      </span>
+    </label>
+  </div>
+));
 
 export default function TutorRegistration() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<matiere[]>([]);
-  const [filteredSubjects, setFilteredSubjects] = useState<matiere[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<matiere[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [userDetails, setUserDetails] = useState<{
-    preorientation: any;
-    annee: number;
-    departement: string;
-  } | null>(null);
+  const subjectsCache = useRef<matiere[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.id) {
-        setError("Utilisateur non connecté");
+      setIsLoading(true);
+      setError(null);
+
+      if (!user?.id || !user.departement || !user.year) {
+        setError("Informations utilisateur incomplètes.");
         setIsLoading(false);
         return;
       }
 
       try {
-        // 1. Récupération des infos utilisateur
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('year, departement')
-          .eq('id', user.id)
-          .single();
-
-        if (userError || !userData) {
-          throw new Error("Erreur lors de la récupération des informations utilisateur");
-        }
-
-        setUserDetails({
-          preorientation: null, // Adding the required property
-          annee: userData.year,
-          departement: userData.departement.toLowerCase()
-        });
-
-        // 2. Récupération de toutes les matières
-        const { data: matiereData, error: matiereError } = await supabase
+        // Requête optimisée avec filtrage côté serveur
+        const { data: matieres, error: matieresError } = await supabase
           .from('matiere')
-          .select('*');
+          .select('*')
+          .or(`departement.eq.${user.departement},departement.eq.stpi`)
+          .lte('annee', user.year || 0);
 
-        if (matiereError) {
-          throw new Error("Erreur lors de la récupération des matières");
-        }
+        if (matieresError) throw matieresError;
 
-        setSubjects(matiereData || []);
-
-        // 3. Récupération des matières sélectionnées
-        const { data: tutorData } = await supabase
+        // Requête tutor en parallèle
+        const { data: tutor, error: tutorError } = await supabase
           .from('tutor')
           .select('matieres')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (tutorData?.matieres) {
-          const selected = matiereData?.filter(subject => 
-            tutorData.matieres.some((m: any) => 
-              m.nom === subject.nom && 
-              m.departement === subject.departement && 
-              m.annee === subject.annee
-            )
-          ) || [];
-          setSelectedSubjects(selected);
+        if (tutorError && tutorError.code !== 'PGRST116') throw tutorError;
+
+        // Mise en cache pour éviter les rendus inutiles
+        if (JSON.stringify(subjectsCache.current) !== JSON.stringify(matieres)) {
+          subjectsCache.current = matieres || [];
+          setSubjects(matieres || []);
         }
 
-      } catch (err) {
-        console.error('Error:', err);
-        setError(err instanceof Error ? err.message : "Erreur de base de données");
+        setSelectedSubjects(tutor?.matieres || []);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Une erreur est survenue");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    // Délai minimal pour éviter le flash de chargement
+    const timer = setTimeout(fetchData, 300);
+    return () => clearTimeout(timer);
   }, [user]);
 
-  useEffect(() => {
-    if (userDetails && subjects.length > 0) {      
-      const filtered = subjects.filter(subject => {
-        const subjectDept = subject.departement.toLowerCase();
-        const userDept = userDetails.departement.toLowerCase();
-        // Récupérer la préorientation seulement pour les 2A
-        const userPreorientation = userDetails.annee === 2 ? userDetails.preorientation?.toLowerCase() : undefined;
+  const handleSubjectToggle = useCallback((subjectName: string) => {
+    setSelectedSubjects(prev =>
+      prev.includes(subjectName)
+        ? prev.filter(s => s !== subjectName)
+        : [...prev, subjectName]
+    );
+  }, []);
 
-        if (subject.annee > userDetails.annee) return false;
-        
-        // Cas 1A - Uniquement matières STPI 1A
-        if (userDetails.annee === 1) {
-          return subjectDept === 'stpi' && subject.annee === 1;
-        }
-        
-        // Cas 2A - Matières STPI communes 2A + matières de préorientation 2A
-        if (userDetails.annee === 2) {
-          if (subjectDept === 'stpi' && subject.annee === 2) return true;
-          return userPreorientation && subjectDept === userPreorientation && subject.annee === 2;
-        }
-        
-        // Cas 3A+ - Matières de leur département et STPI des années inférieures
-        if (subjectDept === 'stpi' && subject.annee < userDetails.annee) return true;
-        if (subjectDept === userDept) return true;
-        
-        return false;
-      });
-
-      setFilteredSubjects(filtered);
-    }
-  }, [subjects, userDetails]);
-
-  const handleSubjectToggle = (subject: matiere) => {
-    setSelectedSubjects(prev => {
-      const isSelected = prev.some(s => 
-        s.nom === subject.nom && 
-        s.departement === subject.departement && 
-        s.annee === subject.annee
-      );
-      
-      return isSelected
-        ? prev.filter(s => 
-            !(s.nom === subject.nom && 
-            s.departement === subject.departement && 
-            s.annee === subject.annee)
-          )
-        : [...prev, subject];
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const subjectsToStore = selectedSubjects.map(s => ({
-        nom: s.nom,
-        departement: s.departement,
-        annee: s.annee
-      }));
-
-      const { error: upsertError } = await supabase
+      const { data: tutor, error: tutorError } = await supabase
         .from('tutor')
-        .upsert({
-          user_id: user.id,
-          matieres: subjectsToStore
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (upsertError) throw upsertError;
+      if (tutorError && tutorError.code !== 'PGRST116') throw tutorError;
+
+      const { error } = tutor
+        ? await supabase
+            .from('tutor')
+            .update({ matieres: selectedSubjects })
+            .eq('user_id', user.id)
+        : await supabase
+            .from('tutor')
+            .insert([{ user_id: user.id, matieres: selectedSubjects }]);
+
+      if (error) throw error;
 
       setSuccess(true);
-      setTimeout(() => navigate('/'), 1000);
-    } catch (err) {
-      setError("Erreur lors de l'enregistrement");
+      setTimeout(() => navigate('/'), 500);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erreur lors de l'enregistrement");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, selectedSubjects, navigate]);
 
-  if (isLoading) return <div>Chargement...</div>;
-  if (error) return <div>Erreur: {error}</div>;
-  if (!userDetails) return <div>Informations utilisateur non disponibles</div>;
+  if (isLoading) return (
+    <div className="max-w-4xl mx-auto p-4">
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-20 bg-gray-100 rounded"></div>
+          ))}
+        </div>
+        <div className="h-10 bg-gray-200 rounded w-1/4 mt-6"></div>
+      </div>
+    </div>
+  );
+
+  if (error) return <div className="max-w-4xl mx-auto p-4 text-red-600">{error}</div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-red-600 to-red-700 text-white py-6 px-4 text-center shadow-md">
-        <h1 className="text-3xl md:text-4xl font-bold">INSA Tutoring</h1>
-      </header>
-      
-      <main className="flex-grow py-10 px-4 md:px-0">
-        <div className="max-w-4xl mx-auto p-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Inscription Tuteur</h2>
-            <Link 
-              to="/"
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Retour à l'accueil
-            </Link>
-          </div>
-          
-          <p className="mb-6">
-            Vous êtes en {userDetails.annee}A - Département {userDetails.departement.toUpperCase()}
-          </p>
-
-          {success && (
-            <div className="p-4 mb-4 bg-green-100 text-green-700 rounded">
-              Vos choix ont été enregistrés avec succès !
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Matières disponibles</h3>
-              <div className="space-y-2">
-                {filteredSubjects.length > 0 ? (
-                  filteredSubjects.map(subject => {
-                    const isSelected = selectedSubjects.some(s => 
-                      s.nom === subject.nom && 
-                      s.departement === subject.departement && 
-                      s.annee === subject.annee
-                    );
-
-                    return (
-                      <div 
-                        key={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                        className="flex items-center p-3 border rounded hover:bg-gray-50"
-                      >
-                        <input
-                          type="checkbox"
-                          id={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                          checked={isSelected}
-                          onChange={() => handleSubjectToggle(subject)}
-                          className="mr-3 h-5 w-5"
-                        />
-                        <label 
-                          htmlFor={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          <div className="font-medium">{subject.nom}</div>
-                          <div className="text-sm text-gray-600">
-                            {subject.departement.toUpperCase()} - Année {subject.annee}
-                          </div>
-                        </label>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-gray-500">Aucune matière disponible pour votre département/année</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="font-medium">{selectedSubjects.length}</span> matière(s) sélectionnée(s)
-              </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isLoading ? "Enregistrement..." : "Enregistrer mes choix"}
-              </button>
-            </div>
-          </form>
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Sélection des matières à tutorer</h2>
+      {success && (
+        <div className="p-4 mb-4 bg-green-100 text-green-700 rounded">
+          Vos choix ont été enregistrés avec succès ! Redirection...
         </div>
-      </main>
-      
-      <footer className="bg-gray-800 text-white text-center py-4 mt-auto text-sm">
-        <p>&copy; 2025 INSA Centre-Val de Loire - Plateforme de Tutorat</p>
-      </footer>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {subjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {subjects.map((subject) => (
+              <SubjectItem
+                key={subject.nom}
+                subject={subject}
+                selected={selectedSubjects.includes(subject.nom)}
+                onToggle={handleSubjectToggle}
+              />
+            ))}
+          </div>
+        ) : (
+          <p>Aucune matière disponible</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50 hover:bg-blue-600 transition-colors"
+        >
+          {isLoading ? "Enregistrement..." : "Enregistrer mes choix"}
+        </button>
+      </form>
     </div>
   );
 }
