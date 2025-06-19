@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { matiere } from '../types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function TutorRegistration() {
   const { user } = useAuth();
@@ -172,73 +172,94 @@ export default function TutorRegistration() {
   if (!userDetails) return <div>Informations utilisateur non disponibles</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Inscription Tuteur</h2>
-      <p className="mb-6">
-        Vous êtes en {userDetails.annee}A - Département {userDetails.departement.toUpperCase()}
-      </p>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <header className="bg-gradient-to-r from-red-600 to-red-700 text-white py-6 px-4 text-center shadow-md">
+        <h1 className="text-3xl md:text-4xl font-bold">INSA Tutoring</h1>
+      </header>
+      
+      <main className="flex-grow py-10 px-4 md:px-0">
+        <div className="max-w-4xl mx-auto p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Inscription Tuteur</h2>
+            <Link 
+              to="/"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Retour à l'accueil
+            </Link>
+          </div>
+          
+          <p className="mb-6">
+            Vous êtes en {userDetails.annee}A - Département {userDetails.departement.toUpperCase()}
+          </p>
 
-      {success && (
-        <div className="p-4 mb-4 bg-green-100 text-green-700 rounded">
-          Vos choix ont été enregistrés avec succès !
-        </div>
-      )}
+          {success && (
+            <div className="p-4 mb-4 bg-green-100 text-green-700 rounded">
+              Vos choix ont été enregistrés avec succès !
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3">Matières disponibles</h3>
-          <div className="space-y-2">
-            {filteredSubjects.length > 0 ? (
-              filteredSubjects.map(subject => {
-                const isSelected = selectedSubjects.some(s => 
-                  s.nom === subject.nom && 
-                  s.departement === subject.departement && 
-                  s.annee === subject.annee
-                );
+          <form onSubmit={handleSubmit}>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Matières disponibles</h3>
+              <div className="space-y-2">
+                {filteredSubjects.length > 0 ? (
+                  filteredSubjects.map(subject => {
+                    const isSelected = selectedSubjects.some(s => 
+                      s.nom === subject.nom && 
+                      s.departement === subject.departement && 
+                      s.annee === subject.annee
+                    );
 
-                return (
-                  <div 
-                    key={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                    className="flex items-center p-3 border rounded hover:bg-gray-50"
-                  >
-                    <input
-                      type="checkbox"
-                      id={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                      checked={isSelected}
-                      onChange={() => handleSubjectToggle(subject)}
-                      className="mr-3 h-5 w-5"
-                    />
-                    <label 
-                      htmlFor={`${subject.nom}-${subject.departement}-${subject.annee}`}
-                      className="flex-1 cursor-pointer"
-                    >
-                      <div className="font-medium">{subject.nom}</div>
-                      <div className="text-sm text-gray-600">
-                        {subject.departement.toUpperCase()} - Année {subject.annee}
+                    return (
+                      <div 
+                        key={`${subject.nom}-${subject.departement}-${subject.annee}`}
+                        className="flex items-center p-3 border rounded hover:bg-gray-50"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`${subject.nom}-${subject.departement}-${subject.annee}`}
+                          checked={isSelected}
+                          onChange={() => handleSubjectToggle(subject)}
+                          className="mr-3 h-5 w-5"
+                        />
+                        <label 
+                          htmlFor={`${subject.nom}-${subject.departement}-${subject.annee}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="font-medium">{subject.nom}</div>
+                          <div className="text-sm text-gray-600">
+                            {subject.departement.toUpperCase()} - Année {subject.annee}
+                          </div>
+                        </label>
                       </div>
-                    </label>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-gray-500">Aucune matière disponible pour votre département/année</p>
-            )}
-          </div>
-        </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-gray-500">Aucune matière disponible pour votre département/année</p>
+                )}
+              </div>
+            </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="font-medium">{selectedSubjects.length}</span> matière(s) sélectionnée(s)
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading ? "Enregistrement..." : "Enregistrer mes choix"}
-          </button>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-medium">{selectedSubjects.length}</span> matière(s) sélectionnée(s)
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isLoading ? "Enregistrement..." : "Enregistrer mes choix"}
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </main>
+      
+      <footer className="bg-gray-800 text-white text-center py-4 mt-auto text-sm">
+        <p>&copy; 2025 INSA Centre-Val de Loire - Plateforme de Tutorat</p>
+      </footer>
     </div>
   );
 }
