@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { clearAuthCookies } from '../lib/cookieManager';
 
 // Mise à jour du type pour inclure la préorientation
 type RegisterUserParams = {
@@ -95,5 +96,23 @@ export async function loginUser(email: string, password: string) {
 
 // Fonction de déconnexion
 export async function logoutUser() {
-  return supabase.auth.signOut();
+  try {
+    // Déconnexion via Supabase
+    const { error } = await supabase.auth.signOut();
+    
+    // Même si une erreur se produit, essayer de nettoyer les cookies
+    if (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      // Continuer quand même pour nettoyer manuellement
+    }
+    
+    // Nettoyer les cookies manuellement pour s'assurer qu'ils sont bien supprimés
+    clearAuthCookies();
+    
+    return { success: !error, error };
+  } catch (err) {
+    console.error("Exception lors de la déconnexion:", err);
+    clearAuthCookies(); // Essayer de nettoyer même en cas d'erreur
+    return { success: false, error: err };
+  }
 }

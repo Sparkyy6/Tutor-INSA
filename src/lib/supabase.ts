@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database.types';
 
-// Les variables d'environnement doivent être préfixées par VITE_ pour être accessibles côté client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -9,7 +8,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Erreur: Variables d\'environnement Supabase manquantes');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Ajouter des options de configuration pour améliorer la gestion de session
+export const supabase = createClient<Database>(
+  supabaseUrl, 
+  supabaseAnonKey, 
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+      // Définir un timeout pour éviter les blocages
+      storageKey: 'tutor-insa-auth-token',
+      flowType: 'pkce'
+    },
+    global: {
+      headers: { 'x-application-name': 'tutor-insa' },
+    },
+    // Configurer des timeouts pour éviter les requêtes bloquées
+    realtime: {
+      timeout: 10000
+    }
+  }
+);
 
 // Fonction utilitaire pour tester la connexion
 export async function testConnection() {
