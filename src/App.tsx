@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 import { setupLoadingTimeout, clearAuthCookies } from './lib/cookieManager';
-import { supabase } from './lib/supabase';
+
 
 const App = () => {
   useEffect(() => {

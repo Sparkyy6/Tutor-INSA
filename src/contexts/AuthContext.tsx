@@ -43,20 +43,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (userError.code === 'PGRST116') {
           console.log('Création du profil utilisateur...');
           // Créer l'entrée dans users à partir des métadonnées
+          if (!session.user.user_metadata.departement || !session.user.user_metadata.year) {
+            // Si les métadonnées essentielles manquent, ne pas créer de profil automatiquement
+            console.error('Métadonnées manquantes pour la création de profil');
+            await supabase.auth.signOut();
+            setUser(null);
+            return;
+          }
+
           const { error: insertError } = await supabase
             .from('users')
             .insert({
               id: session.user.id,
               name: session.user.user_metadata.name || 'Utilisateur',
               email: session.user.email,
-              departement: session.user.user_metadata.departement || 'stpi',
-              year: 1 // Valeur par défaut
+              departement: session.user.user_metadata.departement,
+              year: parseInt(session.user.user_metadata.year) || null,
+              preorientation: session.user.user_metadata.preorientation || null
             });
             
           if (insertError) {
             console.error('Erreur création profil:', insertError);
+            // Déconnecter l'utilisateur car le profil n'a pas pu être créé
+            await supabase.auth.signOut();
             setUser(null);
-            return;
+            throw new Error("Impossible de créer le profil utilisateur. Veuillez vous inscrire manuellement.");
           }
           
           // Récupérer les données fraîchement créées
