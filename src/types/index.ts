@@ -32,6 +32,7 @@ export interface session {
   matiere_nom: string;
   matiere_departement: string; // Department of the subject
   matiere_annee : number;
+  statue : string;
   duration: number; // Duration of the session in minutes
   date: string; // Date of the session
 }

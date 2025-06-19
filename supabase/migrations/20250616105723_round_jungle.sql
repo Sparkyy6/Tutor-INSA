@@ -57,6 +57,7 @@
     matiere_nom TEXT,
     matiere_departement TEXT,
     matiere_annee INT CHECK (matiere_annee BETWEEN 1 AND 5),
+    statue TEXT CHECK (statue IN ('attente', 'oui', 'non')) DEFAULT 'attente',
     date TIMESTAMPTZ NOT NULL,
     duree INT NOT NULL CHECK (duree > 0),
     CONSTRAINT fk_matiere FOREIGN KEY (matiere_nom, matiere_departement,matiere_annee) 
@@ -207,33 +208,6 @@ UPDATE public.users
 SET preorientation = NULL
 WHERE year != 2;
 
--- Ajout de matières pour la 1ère année
-INSERT INTO public.matiere (nom, departement, annee) VALUES
-('Mathématiques Générales', 'stpi', 1),
-('Physique Fondamentale', 'stpi', 1),
-('Introduction à la Programmation', 'stpi', 1),
-('Chimie', 'stpi', 1);
-
--- Ajout de matières pour la 5ème année (par exemple spécialités)
-INSERT INTO public.matiere (nom, departement, annee) VALUES
-('IA Avancée', 'gsi', 5),
-('Réseaux Industriels', 'sti', 5),
-('Traitement d''Images', 'mri', 5),
-('Sécurité Informatique', 'gsi', 5);
-
--- Ajout de quelques utilisateurs tuteurs en 2ème et 3ème année
-INSERT INTO public.users (name, email, year, departement, preorientation) VALUES
-('Alice Dupont', 'alice.dupont@example.com', 2, 'stpi', 'gsi'),
-('Bob Martin', 'bob.martin@example.com', 2, 'stpi', 'sti'),
-('Chloé Petit', 'chloe.petit@example.com', 3, 'mri', NULL),
-('David Lefevre', 'david.lefevre@example.com', 3, 'gsi', NULL);
-
--- Ajout des tuteurs correspondant aux users ci-dessus
-INSERT INTO public.tutor (user_id, matieres) VALUES
-((SELECT id FROM public.users WHERE email = 'alice.dupont@example.com'), ARRAY['Introduction à la Programmation', 'Mathématiques Générales']),
-((SELECT id FROM public.users WHERE email = 'bob.martin@example.com'), ARRAY['Physique Fondamentale', 'Chimie']),
-((SELECT id FROM public.users WHERE email = 'chloe.petit@example.com'), ARRAY['Traitement d''Images']),
-((SELECT id FROM public.users WHERE email = 'david.lefevre@example.com'), ARRAY['IA Avancée', 'Sécurité Informatique']);
 
 -- RLS et policies (optionnel, à adapter selon tes besoins)
 ALTER TABLE public.conversation ENABLE ROW LEVEL SECURITY;

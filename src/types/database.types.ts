@@ -120,6 +120,7 @@ export type Database = {
           matiere_nom: string
           matiere_departement: string
           matiere_annee: number
+          statue : string;
           date: string
           duree: number
         }
@@ -130,6 +131,7 @@ export type Database = {
           matiere_nom: string
           matiere_departement: string
           matiere_annee: number
+          statue : string;
           date: string
           duree: number
         }
@@ -140,6 +142,7 @@ export type Database = {
           matiere_nom?: string
           matiere_departement?: string
           matiere_annee?: number
+          statue ?: string;
           date?: string
           duree?: number
         }
