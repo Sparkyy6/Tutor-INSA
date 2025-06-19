@@ -5,96 +5,72 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Erreur: Variables d\'environnement Supabase manquantes');
+  throw new Error('Missing Supabase environment variables');
 }
 
-import { clearAuthCookies } from './cookieManager'; 
+// Custom fetch with timeout that matches the expected type
+const fetchWithTimeout: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  const timeout = 10000; // 10 seconds
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-// Ajouter des options de configuration pour améliorer la gestion de session
-export const supabase = createClient<Database>(
-  supabaseUrl, 
-  supabaseAnonKey, 
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-      storageKey: 'tutor-insa-auth-token',
-      flowType: 'pkce',
-      debug: process.env.NODE_ENV === 'development'
-    },
-    global: {
-      headers: { 'x-application-name': 'tutor-insa' },
-    },
-    // Configurer des timeouts plus longs pour éviter les problèmes
-    realtime: {
-      timeout: 20000
-    },
-    db: {
-      schema: 'public'
-    }
-  }
-);
-
-// Ajouter un gestionnaire de timeout lors de l'initialisation de Supabase
-
-// Fonction utilitaire pour tester la connexion
-export async function testConnection() {
   try {
-    const start = Date.now();
-    const { error } = await supabase.from('votre_table_test').select('count()', { count: 'exact' }).limit(1);
-    const duration = Date.now() - start;
+    // Convert URL to string if needed
+    const url = input instanceof URL ? input.toString() : input;
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    storageKey: 'tutor-insa-auth-token',
+    flowType: 'pkce'
+  },
+  global: {
+    headers: { 'x-application-name': 'tutor-insa' },
+    fetch: fetchWithTimeout
+  }
+});
+
+// Session management utilities
+export const refreshSession = async () => {
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error) throw error;
+  return data;
+};
+
+export const checkSessionHealth = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return false;
     
-    console.log(`Temps de réponse Supabase: ${duration}ms`);
-    
-    if (error) {
-      console.error('Erreur de connexion à Supabase:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (err) {
-    console.error('Exception lors du test de connexion:', err);
+    const { error } = await supabase.auth.getUser();
+    return !error;
+  } catch {
     return false;
   }
-}
+};
 
-// Initialiser Supabase avec promesse de timeout
-export function initSupabase() {
-  let connectionTimeout = setTimeout(() => {
-    console.error('Timeout de connexion à Supabase');
-    clearAuthCookies(); // Assurer que cette fonction est importée
-    window.location.reload();
-  }, 15000);
-  
-  // Tester la connexion et annuler le timeout si succès
-  testConnection().then(success => {
-    if (success) {
-      clearTimeout(connectionTimeout);
-    }
-  });
-}
+// Typed query with timeout
+export const queryWithTimeout = async <T>(
+  query: Promise<T>,
+  timeoutMs = 10000
+): Promise<T> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-// Fonction pour vérifier que toutes les tables nécessaires existent
-export async function verifyDatabaseStructure() {
-  const requiredTables = ['users', 'student', 'tutor', 'admin', 'session'];
-  const results: Record<string, { exists: boolean; error?: string }> = {};
-  
-  for (const table of requiredTables) {
-    try {
-      const { error } = await supabase
-        .from(table)
-        .select('id')
-        .limit(1);
-      
-      results[table] = error ? 
-        { exists: false, error: error.message } : 
-        { exists: true };
-    } catch (err: any) {
-      results[table] = { exists: false, error: err.message };
-    }
+  try {
+    return await query;
+  } finally {
+    clearTimeout(timeout);
   }
-  
-  console.table(results);
-  return results;
-}
+};

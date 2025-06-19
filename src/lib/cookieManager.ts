@@ -1,8 +1,4 @@
-let cleanupPerformed = false;
-
-export function clearAuthCookies() {
-  if (cleanupPerformed) return true;
-  
+export const clearAuthCookies = () => {
   try {
     // Clear cookies
     document.cookie.split(';').forEach(cookie => {
@@ -11,23 +7,26 @@ export function clearAuthCookies() {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       }
     });
-    
-    // Clear localStorage
+
+    // Clear storage
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-') || key.includes('supabase')) {
+      if (key.startsWith('sb-') || key.includes('supabase') || key.includes('tutor-insa-auth')) {
         localStorage.removeItem(key);
       }
     });
-    
-    cleanupPerformed = true;
-    return true;
-  } catch (error) {
-    console.error('Failed to clear auth data:', error);
-    return false;
-  }
-}
 
-export function setupLoadingTimeout(timeout = 5000) {  
+    // Clear session storage
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('sb-') || key.includes('supabase')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch (error) {
+    console.error('Cleanup error:', error);
+  }
+};
+
+export const setupLoadingTimeout = (timeout = 10000) => {
   return setTimeout(() => {
     if (document.readyState !== 'complete') {
       console.warn('Loading timeout - clearing auth data');
@@ -35,4 +34,4 @@ export function setupLoadingTimeout(timeout = 5000) {
       window.location.reload();
     }
   }, timeout);
-}
+};
