@@ -21,6 +21,7 @@ const SubjectItem = memo(({ subject, selected, onToggle }: {
       <span className="font-medium">{subject.nom}</span>
       <span className="text-sm text-gray-500 block">
         {subject.departement.toUpperCase()} - {subject.annee}A
+        {subject.preorientation && ` (${subject.preorientation.toUpperCase()})`}
       </span>
     </label>
   </div>
@@ -49,16 +50,30 @@ export default function TutorRegistration() {
       }
 
       try {
-        // Requête optimisée avec filtrage côté serveur
+        // Récupérer toutes les matières
         const { data: matieres, error: matieresError } = await supabase
           .from('matiere')
-          .select('*')
-          .or(`departement.eq.${user.departement},departement.eq.stpi`)
-          .lte('annee', user.year || 0);
+          .select('*');
 
         if (matieresError) throw matieresError;
 
-        // Requête tutor en parallèle
+        // Filtrer selon les règles spécifiques
+        const filteredMatieres = (matieres || []).filter(subject => {
+          // Toutes les matières STPI 1A sont visibles
+          if (subject.departement === 'stpi' && subject.annee === 1) {
+            return true;
+          }
+          
+          // Pour STPI 2A: visible si preorientation est null ou correspond au département
+          if (subject.departement === 'stpi' && subject.annee === 2) {
+            return subject.preorientation === null || subject.preorientation === user.departement;
+          }
+          
+          // Pour les autres matières : même département et année ≤ année utilisateur
+          return subject.departement === user.departement && subject.annee <= (user.year || 0);
+        });
+
+        // Requête pour récupérer les matières déjà sélectionnées comme tuteur
         const { data: tutor, error: tutorError } = await supabase
           .from('tutor')
           .select('matieres')
@@ -67,10 +82,10 @@ export default function TutorRegistration() {
 
         if (tutorError && tutorError.code !== 'PGRST116') throw tutorError;
 
-        // Mise en cache pour éviter les rendus inutiles
-        if (JSON.stringify(subjectsCache.current) !== JSON.stringify(matieres)) {
-          subjectsCache.current = matieres || [];
-          setSubjects(matieres || []);
+        // Mise en cache
+        if (JSON.stringify(subjectsCache.current) !== JSON.stringify(filteredMatieres)) {
+          subjectsCache.current = filteredMatieres;
+          setSubjects(filteredMatieres);
         }
 
         setSelectedSubjects(tutor?.matieres || []);
@@ -81,14 +96,13 @@ export default function TutorRegistration() {
       }
     };
 
-    // Délai minimal pour éviter le flash de chargement
     const timer = setTimeout(fetchData, 300);
     return () => clearTimeout(timer);
   }, [user]);
 
   useEffect(() => {
     async function fetchStudentSubjects() {
-      if (!user?.id) return; // Ajouté pour éviter l'erreur
+      if (!user?.id) return;
       const { data: student } = await supabase
         .from('student')
         .select('matieres')
@@ -149,12 +163,10 @@ export default function TutorRegistration() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-gradient-to-r from-red-600 to-red-700 text-white py-6 px-4 text-center shadow-md">
         <h1 className="text-3xl md:text-4xl font-bold">Tutor'INSA</h1>
       </header>
       
-      {/* Main content */}
       <main className="flex-grow py-10 px-4 md:px-0">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-6">
@@ -227,7 +239,6 @@ export default function TutorRegistration() {
         </div>
       </main>
       
-      {/* Footer */}
       <footer className="bg-gray-800 text-white text-center py-4 mt-auto text-sm">
         <p>&copy; 2025 INSA Centre-Val de Loire - Plateforme de Tutorat</p>
       </footer>
