@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { AuthContext } from '../contexts/AuthContext';
@@ -23,6 +23,15 @@ const SessionsManagement: React.FC = () => {
   const [view, setView] = useState<'list' | 'calendar'>('calendar');
   const [exportFormat, setExportFormat] = useState<'ical' | 'google' | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Ajouter ces états pour la navigation dans le calendrier
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [showYearSelector, setShowYearSelector] = useState(false);
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const yearSelectorRef = useRef<HTMLDivElement>(null);
+  const monthSelectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -266,6 +275,62 @@ const SessionsManagement: React.FC = () => {
     }
   }, [exportFormat]);
 
+  // Méthodes pour la navigation dans le calendrier
+  const goToPreviousMonth = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const goToNextMonth = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const selectYear = (year: number) => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setFullYear(year);
+      return newDate;
+    });
+    setShowYearSelector(false);
+  };
+
+  const selectMonth = (month: number) => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setMonth(month);
+      return newDate;
+    });
+    setShowMonthSelector(false);
+  };
+
+  // Effet pour fermer les sélecteurs lors d'un clic en dehors
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (yearSelectorRef.current && !yearSelectorRef.current.contains(event.target as Node)) {
+        setShowYearSelector(false);
+      }
+      if (monthSelectorRef.current && !monthSelectorRef.current.contains(event.target as Node)) {
+        setShowMonthSelector(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Generate calendar view
   const renderCalendar = () => {
     // Group sessions by date (just the day, not time)
@@ -282,10 +347,10 @@ const SessionsManagement: React.FC = () => {
       sessionsByDay[dateStr].push(session);
     });
     
-    // Get current date and calculate start of month
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    // Utiliser currentDate au lieu de today pour le mois affiché
+    const today = new Date(); // Garder today pour mettre en évidence le jour actuel
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
     
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
@@ -344,17 +409,110 @@ const SessionsManagement: React.FC = () => {
     const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     
+    // Générer les années pour le sélecteur (5 ans avant, 5 ans après)
+    const currentYearNum = currentDate.getFullYear();
+    const years = [];
+    for (let i = currentYearNum - 5; i <= currentYearNum + 5; i++) {
+      years.push(i);
+    }
+    
     return (
       <div className="bg-white rounded-lg shadow-sm p-4 overflow-hidden">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {monthNames[currentMonth]} {currentYear}
-          </h2>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={goToPreviousMonth}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Mois précédent"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <div className="relative inline-block text-left">
+              {/* Bouton du mois */}
+              <button 
+                onClick={() => setShowMonthSelector(!showMonthSelector)}
+                className="font-semibold text-gray-800 hover:bg-gray-100 rounded px-2 py-1"
+              >
+                {monthNames[currentMonth]}
+              </button>
+              
+              {/* Sélecteur de mois */}
+              {showMonthSelector && (
+                <div 
+                  ref={monthSelectorRef}
+                  className="origin-top-left absolute left-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20"
+                >
+                  <div className="py-1 grid grid-cols-3 gap-1 p-2" role="menu" aria-orientation="vertical">
+                    {monthNames.map((month, idx) => (
+                      <button
+                        key={month}
+                        className={`px-2 py-1 text-sm rounded ${currentMonth === idx ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'}`}
+                        onClick={() => selectMonth(idx)}
+                      >
+                        {month.substr(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="relative inline-block text-left">
+              {/* Bouton de l'année */}
+              <button 
+                onClick={() => setShowYearSelector(!showYearSelector)}
+                className="font-semibold text-gray-800 hover:bg-gray-100 rounded px-2 py-1"
+              >
+                {currentYear}
+              </button>
+              
+              {/* Sélecteur d'année */}
+              {showYearSelector && (
+                <div 
+                  ref={yearSelectorRef}
+                  className="origin-top-left absolute left-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20"
+                >
+                  <div className="py-1 max-h-60 overflow-y-auto" role="menu" aria-orientation="vertical">
+                    {years.map((year) => (
+                      <button
+                        key={year}
+                        className={`block px-4 py-2 text-sm w-full text-left ${currentYear === year ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'}`}
+                        onClick={() => selectYear(year)}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button 
+              onClick={goToNextMonth}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Mois suivant"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            <button 
+              onClick={goToToday}
+              className="ml-2 px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-50"
+            >
+              Aujourd'hui
+            </button>
+          </div>
           
           {/* Dropdown pour l'exportation */}
-          <div className="relative">
+          <div className="relative" ref={exportMenuRef}>
+            {/* Bouton Exporter (déjà existant) */}
             <button
-              onClick={() => setExportFormat(null)} // Pour réinitialiser si on ferme
+              onClick={() => setShowExportMenu(!showExportMenu)}
               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -363,25 +521,33 @@ const SessionsManagement: React.FC = () => {
               Exporter
             </button>
             
-            {/* Menu déroulant */}
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-              <div className="py-1">
-                <button
-                  onClick={() => setExportFormat('ical')}
-                  disabled={isExporting}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  {isExporting && exportFormat === 'ical' ? 'Exportation en cours...' : 'Exporter au format iCal (.ics)'}
-                </button>
-                <button
-                  onClick={() => setExportFormat('google')}
-                  disabled={isExporting}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  {isExporting && exportFormat === 'google' ? 'Ouverture...' : 'Ajouter à Google Calendar'}
-                </button>
+            {/* Menu déroulant (déjà existant) */}
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setExportFormat('ical');
+                      setShowExportMenu(false);
+                    }}
+                    disabled={isExporting}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    {isExporting && exportFormat === 'ical' ? 'Exportation en cours...' : 'Exporter au format iCal (.ics)'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setExportFormat('google');
+                      setShowExportMenu(false);
+                    }}
+                    disabled={isExporting}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    {isExporting && exportFormat === 'google' ? 'Ouverture...' : 'Ajouter à Google Calendar'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
         
@@ -409,6 +575,7 @@ const SessionsManagement: React.FC = () => {
                   {day.date.getDate()}
                 </div>
                 
+                {/* Sessions existantes */}
                 {day.sessions.map(session => (
                   <div 
                     key={session.id}
@@ -435,6 +602,20 @@ const SessionsManagement: React.FC = () => {
       </div>
     );
   };
+
+  // Ajout d'un effet pour gérer le clic en dehors du menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
