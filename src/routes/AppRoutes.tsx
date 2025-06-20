@@ -10,6 +10,7 @@ import TutorRegistration from '../components/TutorRegistration';
 import StudentRegister from '../components/StudentRegister';
 import ChatRoom from '../components/ChatRoom';
 import ConversationsList from '../components/ConversationsList';
+import SessionsCalendar from '../components/SessionsCalendar';
 
 const LoadingScreen = () => {
   const [loadingStartTime] = useState(Date.now());
@@ -41,6 +42,7 @@ const AuthenticatedRoutes = memo(({ user, signOut }: { user: any, signOut: () =>
       <Route path="/find-tutor" element={<StudentRegister />} />
       <Route path="/chat/:conversationId" element={<ChatRoom />} />
       <Route path="/conversations" element={<ConversationsList />} />
+      <Route path="/sessions" element={<SessionsCalendar />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   </Router>

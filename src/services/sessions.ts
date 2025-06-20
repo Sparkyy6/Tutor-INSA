@@ -169,3 +169,24 @@ export async function getSessionsForConversation(conversationId: string) {
     return []; // Retourner un tableau vide au lieu de propager l'erreur
   }
 }
+
+// Récupérer toutes les sessions où l'utilisateur est élève ou tuteur
+export async function getSessionsForUser(userId: string) {
+  const { data: student } = await supabase.from('student').select('id').eq('user_id', userId).maybeSingle();
+  const { data: tutor } = await supabase.from('tutor').select('id').eq('user_id', userId).maybeSingle();
+
+  let query = supabase.from('session').select('*');
+  if (student?.id && tutor?.id) {
+    query = query.or(`eleve.eq.${student.id},tuteur.eq.${tutor.id}`);
+  } else if (student?.id) {
+    query = query.eq('eleve', student.id);
+  } else if (tutor?.id) {
+    query = query.eq('tuteur', tutor.id);
+  } else {
+    return [];
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
