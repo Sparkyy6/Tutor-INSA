@@ -31,6 +31,7 @@ export default function TutorRegistration() {
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<matiere[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [studentSubjects, setStudentSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -85,6 +86,19 @@ export default function TutorRegistration() {
     return () => clearTimeout(timer);
   }, [user]);
 
+  useEffect(() => {
+    async function fetchStudentSubjects() {
+      if (!user?.id) return; // Ajouté pour éviter l'erreur
+      const { data: student } = await supabase
+        .from('student')
+        .select('matieres')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (student?.matieres) setStudentSubjects(student.matieres);
+    }
+    if (user?.id) fetchStudentSubjects();
+  }, [user]);
+
   const handleSubjectToggle = useCallback((subjectName: string) => {
     setSelectedSubjects(prev =>
       prev.includes(subjectName)
@@ -128,6 +142,10 @@ export default function TutorRegistration() {
       setIsLoading(false);
     }
   }, [user, selectedSubjects, navigate]);
+
+  const filteredSubjects = subjects.filter(
+    (subject) => !studentSubjects.includes(subject.nom)
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -181,9 +199,9 @@ export default function TutorRegistration() {
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-4">
-                {subjects.length > 0 ? (
+                {filteredSubjects.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {subjects.map((subject) => (
+                    {filteredSubjects.map((subject) => (
                       <SubjectItem
                         key={subject.nom}
                         subject={subject}

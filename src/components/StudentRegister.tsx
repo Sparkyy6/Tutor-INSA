@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getStudentSubjects, getTutorsForSubject, registerStudentForTutoring } from '../services/student';
 import { createOrGetConversation } from '../services/chat';
 import { matiere, Tutor } from '../types';
+import { supabase } from '../lib/supabase';
 
 export default function StudentRegister() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export default function StudentRegister() {
   const [availableTutors, setAvailableTutors] = useState<Tutor[]>([]);
   const [isLoadingTutors, setIsLoadingTutors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tutorSubjects, setTutorSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +44,20 @@ export default function StudentRegister() {
     };
 
     fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    // Récupère les matières où l'utilisateur est déjà tuteur
+    async function fetchTutorSubjects() {
+      if (!user?.id) return;
+      const { data: tutor, error } = await supabase
+        .from('tutor')
+        .select('matieres')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (tutor?.matieres) setTutorSubjects(tutor.matieres);
+    }
+    if (user?.id) fetchTutorSubjects();
   }, [user]);
 
   const handleSelectSubject = async (subject: matiere) => {
@@ -93,6 +109,10 @@ export default function StudentRegister() {
       setIsSubmitting(false);
     }
   };
+
+  const filteredSubjects = subjects.filter(
+    (subject) => !tutorSubjects.includes(subject.nom)
+  );
 
   if (isLoading) {
     return (
@@ -188,9 +208,9 @@ export default function StudentRegister() {
                   ) : "Informations non disponibles"}
                 </p>
                 
-                {subjects.length > 0 ? (
+                {filteredSubjects.length > 0 ? (
                   <ul className="space-y-2">
-                    {subjects.map((subject) => (
+                    {filteredSubjects.map((subject) => (
                       <li key={`${subject.nom}-${subject.departement}-${subject.annee}`}>
                         <button
                           onClick={() => handleSelectSubject(subject)}
