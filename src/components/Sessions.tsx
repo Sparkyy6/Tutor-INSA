@@ -337,8 +337,9 @@ const SessionsManagement: React.FC = () => {
     const sessionsByDay: Record<string, Session[]> = {};
     
     sessions.forEach(session => {
+      // Créez une date en conservant la date exacte (sans ajustement de fuseau horaire)
       const date = new Date(session.date);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       
       if (!sessionsByDay[dateStr]) {
         sessionsByDay[dateStr] = [];
@@ -375,7 +376,7 @@ const SessionsManagement: React.FC = () => {
     // Add previous month days
     for (let i = 0; i < prevMonthDays; i++) {
       const day = new Date(currentYear, currentMonth - 1, prevMonthStartDay + i);
-      const dateStr = day.toISOString().split('T')[0];
+      const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
       calendarDays.push({
         date: day,
         isCurrentMonth: false,
@@ -386,7 +387,9 @@ const SessionsManagement: React.FC = () => {
     // Add current month days
     for (let i = 1; i <= daysInMonth; i++) {
       const day = new Date(currentYear, currentMonth, i);
-      const dateStr = day.toISOString().split('T')[0];
+      // Utilisez la même méthode pour créer la clé de date
+      const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      
       calendarDays.push({
         date: day,
         isCurrentMonth: true,
@@ -397,7 +400,7 @@ const SessionsManagement: React.FC = () => {
     // Add next month days
     for (let i = 1; i <= nextMonthDays; i++) {
       const day = new Date(currentYear, currentMonth + 1, i);
-      const dateStr = day.toISOString().split('T')[0];
+      const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
       calendarDays.push({
         date: day,
         isCurrentMonth: false,
