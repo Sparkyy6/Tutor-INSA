@@ -1,9 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMessages, sendMessage, getConversationDetails } from '../services/chat';
+import { getSessionsForConversation } from '../services/sessions';
 import { Message } from '../types/chat.types';
 import { supabase } from '../lib/supabase';
+import SessionRequestButton from './SessionRequestButton';
+import SessionRequestItem from './SessionRequestItem';
 
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -11,20 +14,41 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
-  const [conversationDetails, setConversationDetails] = useState<{subject: string, otherUserName: string} | null>(null);
+  const [conversationDetails, setConversationDetails] = useState<{
+    subject: string, 
+    otherUserName: string, 
+    otherUserId: string
+  } | null>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fonction pour charger les sessions
+  const loadSessions = useCallback(async () => {
+    if (!conversationId) return;
+    console.log('Loading sessions for conversation:', conversationId);
+    try {
+      const sessionData = await getSessionsForConversation(conversationId);
+      console.log('Sessions loaded:', sessionData);
+      setSessions(sessionData);
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setSessions([]);
+    }
+  }, [conversationId]);
 
   useEffect(() => {
     if (!conversationId || !user?.id) return;
     
-    // Charger les messages initiaux
+    // Charger les messages initiaux et les sessions
     setLoading(true);
     Promise.all([
       getMessages(conversationId),
-      getConversationDetails(conversationId, user.id)
-    ]).then(([messagesData, details]) => {
+      getConversationDetails(conversationId, user.id),
+      getSessionsForConversation(conversationId)
+    ]).then(([messagesData, details, sessionData]) => {
       setMessages(messagesData);
       setConversationDetails(details);
+      setSessions(sessionData);
     }).finally(() => setLoading(false));
       
     // Configurer l'abonnement aux nouveaux messages
@@ -41,8 +65,25 @@ export default function ChatRoom() {
       })
       .subscribe();
     
+    // Configurer l'abonnement global aux changements de sessions
+    // Sans filtre sur conversation_id qui n'existe pas dans la table session
+    const sessionSubscription = supabase
+      .channel(`session-changes-${conversationId}`)
+      .on('postgres_changes', {
+        event: '*',  // Écouter tous les types d'événements (INSERT, UPDATE, DELETE)
+        schema: 'public',
+        table: 'session'
+        // Pas de filtre car conversation_id n'existe pas
+      }, (payload) => {
+        console.log('Session change detected:', payload);
+        // Recharger toutes les sessions à chaque changement
+        loadSessions();
+      })
+      .subscribe();
+    
     return () => {
       subscription.unsubscribe();
+      sessionSubscription.unsubscribe();
     };
   }, [conversationId, user?.id]);
 
@@ -56,6 +97,11 @@ export default function ChatRoom() {
     if (!input.trim() || !user || !conversationId) return;
     await sendMessage(conversationId, user.id, input.trim());
     setInput('');
+  };
+
+  const handleSessionRequestSent = async () => {
+    // Recharger les sessions après l'envoi d'une demande
+    await loadSessions();
   };
 
   return (
@@ -85,6 +131,50 @@ export default function ChatRoom() {
       
       <main className="flex-grow py-6 px-4 md:px-0">
         <div className="max-w-4xl mx-auto w-full">
+          {/* Section des sessions/rendez-vous */}
+          {user && conversationDetails?.otherUserId && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-medium text-gray-900">Rendez-vous</h2>
+                <SessionRequestButton
+                  conversationId={conversationId || ''}
+                  senderId={user.id}
+                  receiverId={conversationDetails.otherUserId}
+                  subject={conversationDetails.subject}
+                  onRequestSent={handleSessionRequestSent}
+                />
+              </div>
+              
+              {sessions.length > 0 ? (
+                <div className="space-y-2 mb-4">
+                  {sessions.map(session => {
+                    // L'utilisateur est le créateur si c'est lui qui a envoyé la demande
+                    const isCreator = user.id === conversationDetails?.otherUserId;
+
+                    return (
+                      <SessionRequestItem
+                        key={session.id}
+                        sessionId={session.id}
+                        conversationId={conversationId || ''}
+                        userId={user.id}
+                        date={session.date}
+                        duration={session.duree}
+                        status={session.statue || 'attente'}
+                        isCreator={isCreator}
+                        // Passer une prop supplémentaire pour indiquer si c'est l'envoyeur
+                        isSender={isCreator}
+                        onResponse={loadSessions}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm mb-4">Aucun rendez-vous planifié.</p>
+              )}
+            </div>
+          )}
+
+          {/* Fenêtre de chat */}
           <div className="bg-white rounded-lg shadow-md h-[65vh] flex flex-col">
             {loading ? (
               <div className="flex-1 flex items-center justify-center">
