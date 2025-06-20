@@ -20,6 +20,7 @@ export default function ChatRoom() {
     otherUserId: string
   } | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fonction pour charger les sessions
@@ -95,8 +96,17 @@ export default function ChatRoom() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !user || !conversationId) return;
+
+    // Vérification de lien (http, https, www, etc.)
+    const linkRegex = /(https?:\/\/|www\.)\S+/i;
+    if (linkRegex.test(input)) {
+      setErrorMsg("Vous ne pouvez pas envoyer de lien dans la messagerie.");
+      return;
+    }
+
     await sendMessage(conversationId, user.id, input.trim());
     setInput('');
+    setErrorMsg(null);
   };
 
   const handleSessionRequestSent = async () => {
@@ -252,6 +262,9 @@ export default function ChatRoom() {
                     Envoyer
                   </button>
                 </form>
+                {errorMsg && (
+                  <div className="text-red-600 text-sm mb-2">{errorMsg}</div>
+                )}
               </>
             )}
           </div>
