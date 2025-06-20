@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabase';
 import SessionRequestButton from './SessionRequestButton';
 import SessionRequestItem from './SessionRequestItem';
 
+const forbiddenWords = ['grosmot1', 'grosmot2', 'autremot']; // Mets ici les mots interdits (en minuscules)
+
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
@@ -101,6 +103,14 @@ export default function ChatRoom() {
     const linkRegex = /(https?:\/\/|www\.)\S+/i;
     if (linkRegex.test(input)) {
       setErrorMsg("Vous ne pouvez pas envoyer de lien dans la messagerie.");
+      return;
+    }
+
+    // Vérification des mots interdits
+    const inputLower = input.toLowerCase();
+    const foundForbidden = forbiddenWords.find(word => inputLower.includes(word));
+    if (foundForbidden) {
+      setErrorMsg("Ce message contient un mot interdit.");
       return;
     }
 
