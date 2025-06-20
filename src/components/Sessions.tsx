@@ -54,7 +54,11 @@ const SessionsManagement: React.FC = () => {
           .eq('user_id', user.id)
           .single();
 
-        // Fetch sessions where this user is either a tutor or student
+        // Debug: afficher les IDs pour vérification
+        console.log("ID du tuteur:", tutorData?.id);
+        console.log("ID de l'étudiant:", studentData?.id);
+
+        // Construct the query with OR condition properly
         let sessionQuery = supabase.from('session').select(`
           id,
           matiere_nom,
@@ -65,21 +69,28 @@ const SessionsManagement: React.FC = () => {
           tuteur
         `);
 
+        // Si l'utilisateur est soit tuteur soit élève
+        const conditions = [];
+        
         if (tutorData?.id) {
-          sessionQuery = sessionQuery.eq('tuteur', tutorData.id);
-        } 
+          conditions.push(`tuteur.eq.${tutorData.id}`);
+        }
         
         if (studentData?.id) {
-          if (tutorData?.id) {
-            sessionQuery = sessionQuery.or(`eleve.eq.${studentData.id}`);
-          } else {
-            sessionQuery = sessionQuery.eq('eleve', studentData.id);
-          }
+          conditions.push(`eleve.eq.${studentData.id}`);
+        }
+        
+        // Combiner les conditions avec OR si nécessaire
+        if (conditions.length > 0) {
+          sessionQuery = sessionQuery.or(conditions.join(','));
         }
 
         const { data: sessionsData, error: sessionsError } = await sessionQuery
           .order('date', { ascending: true });
 
+        // Debug: afficher les sessions récupérées
+        console.log("Sessions récupérées:", sessionsData);
+        
         if (sessionsError) throw sessionsError;
 
         // After getting the sessions, fetch the user names in a separate query
@@ -337,9 +348,15 @@ const SessionsManagement: React.FC = () => {
     const sessionsByDay: Record<string, Session[]> = {};
     
     sessions.forEach(session => {
-      // Créez une date en conservant la date exacte (sans ajustement de fuseau horaire)
-      const date = new Date(session.date);
-      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      // Utiliser une approche qui évite les problèmes de fuseau horaire
+      const dateObj = new Date(session.date);
+      // Normaliser à minuit heure locale pour éviter les problèmes de fuseaux horaires
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth();
+      const day = dateObj.getDate();
+      
+      // Créer une clé de date normalisée
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
       if (!sessionsByDay[dateStr]) {
         sessionsByDay[dateStr] = [];
@@ -587,6 +604,7 @@ const SessionsManagement: React.FC = () => {
                       session.statue === 'attente' ? 'bg-yellow-50 border-l-4 border-yellow-500' :
                       'bg-gray-50 border-l-4 border-red-300'
                     }`}
+                    title={`${session.matiere_nom} - ${formatDate(session.date)}`}
                   >
                     <div className="truncate font-medium">{session.matiere_nom}</div>
                     <div className="truncate">
