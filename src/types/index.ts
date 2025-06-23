@@ -39,6 +39,7 @@ export interface session {
 
 
 export interface matiere {
+  preorientation: string;
   nom : string; // Name of the subject
   departement: string; // Department of the subject
   annee: number; // Year of the subject
